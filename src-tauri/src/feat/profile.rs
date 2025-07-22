@@ -14,6 +14,7 @@ pub fn toggle_proxy_profile(profile_index: String) {
         let app_handle = handle::Handle::global().app_handle().unwrap();
         match cmd::patch_profiles_config_by_profile_index(app_handle, profile_index).await {
             Ok(_) => {
+                #[cfg(desktop)]
                 let _ = tray::Tray::global().update_menu();
             }
             Err(err) => {
