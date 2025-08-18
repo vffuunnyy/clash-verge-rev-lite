@@ -3633,6 +3633,7 @@ dependencies = [
  "tungstenite 0.27.0",
  "url",
  "users",
+ "uuid",
  "warp",
  "winapi",
  "winreg 0.55.0",
@@ -8377,6 +8378,7 @@ checksum = "3cf4199d1e5d15ddd86a694e4d0dffa9c323ce759fea589f00fef9d81cc1931d"
 dependencies = [
  "getrandom 0.3.3",
  "js-sys",
+ "rand 0.9.1",
  "serde",
  "wasm-bindgen",
 ]
