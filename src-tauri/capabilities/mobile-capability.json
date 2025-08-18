@@ -18,6 +18,7 @@
         "process:allow-restart",
         "deep-link:default",
         "core:window:allow-set-theme",
-        "notification:default"
+        "notification:default",
+        "core:webview:allow-create-webview"
     ]
 }

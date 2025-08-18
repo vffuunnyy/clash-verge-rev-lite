@@ -13,7 +13,7 @@ build = "build.rs"
 identifier = "io.github.koala-clash"
 
 [build-dependencies]
-tauri-build = { version = "2.3.0", features = [] }
+tauri-build = { version = "2.3.1", features = [] }
 
 [dependencies]
 url = "2.5.4"
@@ -53,7 +53,7 @@ regex = "1.11.1"
 sysproxy = { git = "https://github.com/clash-verge-rev/sysproxy-rs" }
 image = "0.25.6"
 imageproc = "0.25.0"
-tauri = { version = "2.6.2", features = [
+tauri = { version = "2.7.0", features = [
   "protocol-asset",
   "devtools",
   "tray-icon",

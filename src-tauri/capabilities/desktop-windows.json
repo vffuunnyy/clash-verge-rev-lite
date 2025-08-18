@@ -1,6 +1,7 @@
 {
   "identifier": "desktop-windows-capability",
   "description": "permissions for desktop windows applications",
+  "platforms": ["windows"],
   "windows": ["main"],
   "permissions": [
     "core:webview:allow-create-webview",

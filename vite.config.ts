@@ -14,7 +14,7 @@ const monacoEditorPluginDefault = (monacoEditorPlugin as any).default as (
 export default defineConfig({
   clearScreen: false,
   root: "src",
-  server: { port: 5173 },
+  server: { port: 3000 },
   plugins: [
     svgr(),
     react(),

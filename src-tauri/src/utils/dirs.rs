@@ -5,14 +5,14 @@ use std::{fs, path::PathBuf};
 use tauri::Manager;
 
 #[cfg(not(feature = "verge-dev"))]
-pub static APP_ID: &str = "io.github.koala-clash";
+pub static APP_ID: &str = "io.github.koala_clash";
 #[cfg(not(feature = "verge-dev"))]
-pub static BACKUP_DIR: &str = "io.github.koala-clash-backup";
+pub static BACKUP_DIR: &str = "io.github.koala_clash-backup";
 
 #[cfg(feature = "verge-dev")]
-pub static APP_ID: &str = "io.github.koala-clash.dev";
+pub static APP_ID: &str = "io.github.koala_clash.dev";
 #[cfg(feature = "verge-dev")]
-pub static BACKUP_DIR: &str = "io.github.koala-clash-backup-dev";
+pub static BACKUP_DIR: &str = "io.github.koala_clash-backup-dev";
 
 pub static PORTABLE_FLAG: OnceCell<bool> = OnceCell::new();
 
@@ -188,13 +188,13 @@ pub fn profiles_path() -> Result<PathBuf> {
 #[cfg(target_os = "macos")]
 pub fn service_path() -> Result<PathBuf> {
     let res_dir = app_resources_dir()?;
-    Ok(res_dir.join("koala-clash-service"))
+    Ok(res_dir.join("koala_clash-service"))
 }
 
 #[cfg(windows)]
 pub fn service_path() -> Result<PathBuf> {
     let res_dir = app_resources_dir()?;
-    Ok(res_dir.join("koala-clash-service.exe"))
+    Ok(res_dir.join("koala_clash-service.exe"))
 }
 
 pub fn service_log_file() -> Result<PathBuf> {
