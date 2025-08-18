@@ -8,7 +8,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 const IPC_SOCKET_NAME: &str = if cfg!(windows) {
     r"\\.\pipe\koala-clash-service"
 } else {
-    "/tmp/koala_clash-service.sock"
+    "/tmp/koala-clash-service.sock"
 };
 
 // 定义命令类型

@@ -397,7 +397,7 @@ const resolvePlugin = async () => {
 // service chmod
 const resolveServicePermission = async () => {
   const serviceExecutables = [
-    "koala_clash-service*",
+    "koala-clash-service*",
     "install-service*",
     "uninstall-service*",
   ];
@@ -451,7 +451,7 @@ const resolveService = () => {
   let ext = platform === "win32" ? ".exe" : "";
   let suffix = platform === "linux" ? "-" + SIDECAR_HOST : "";
   resolveResource({
-    file: "koala_clash-service" + suffix + ext,
+    file: "koala-clash-service" + suffix + ext,
     downloadURL: `${SERVICE_URL}/koala-clash-service${ext}`,
   });
 };
