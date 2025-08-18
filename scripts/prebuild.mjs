@@ -26,6 +26,10 @@ const PLATFORM_MAP = {
   "armv7-unknown-linux-gnueabihf": "linux",
   "riscv64gc-unknown-linux-gnu": "linux",
   "loongarch64-unknown-linux-gnu": "linux",
+  "x86_64-linux-android": "android",
+  "i686-linux-android": "android",
+  "aarch64-linux-android": "android",
+  "armv7-linux-androideabi": "android",
 };
 const ARCH_MAP = {
   "x86_64-pc-windows-msvc": "x64",
@@ -39,6 +43,10 @@ const ARCH_MAP = {
   "armv7-unknown-linux-gnueabihf": "arm",
   "riscv64gc-unknown-linux-gnu": "riscv64",
   "loongarch64-unknown-linux-gnu": "loong64",
+  "x86_64-linux-android": "x64",
+  "i686-linux-android": "ia32",
+  "aarch64-linux-android": "arm64",
+  "armv7-linux-androideabi": "arm",
 };
 
 const arg1 = process.argv.slice(2)[0];
@@ -72,6 +80,10 @@ const META_ALPHA_MAP = {
   "linux-arm": "mihomo-linux-armv7",
   "linux-riscv64": "mihomo-linux-riscv64",
   "linux-loong64": "mihomo-linux-loong64",
+  "android-x64": "mihomo-android-amd64",
+  "android-ia32": "mihomo-android-386",
+  "android-arm64": "mihomo-android-arm64-v8",
+  "android-arm": "mihomo-android-armv7",
 };
 
 // Fetch the latest alpha release version from the version.txt file
@@ -119,6 +131,10 @@ const META_MAP = {
   "linux-arm": "mihomo-linux-armv7",
   "linux-riscv64": "mihomo-linux-riscv64",
   "linux-loong64": "mihomo-linux-loong64",
+  "android-x64": "mihomo-android-amd64",
+  "android-ia32": "mihomo-android-386",
+  "android-arm64": "mihomo-android-arm64-v8",
+  "android-arm": "mihomo-android-armv7",
 };
 
 // Fetch the latest release version from the version.txt file
@@ -381,7 +397,7 @@ const resolvePlugin = async () => {
 // service chmod
 const resolveServicePermission = async () => {
   const serviceExecutables = [
-    "koala-clash-service*",
+    "koala_clash-service*",
     "install-service*",
     "uninstall-service*",
   ];
@@ -435,7 +451,7 @@ const resolveService = () => {
   let ext = platform === "win32" ? ".exe" : "";
   let suffix = platform === "linux" ? "-" + SIDECAR_HOST : "";
   resolveResource({
-    file: "koala-clash-service" + suffix + ext,
+    file: "koala_clash-service" + suffix + ext,
     downloadURL: `${SERVICE_URL}/koala-clash-service${ext}`,
   });
 };
@@ -517,7 +533,7 @@ const tasks = [
     name: "service_chmod",
     func: resolveServicePermission,
     retry: 5,
-    unixOnly: platform === "linux" || platform === "darwin",
+    unixOnly: true,
   },
   {
     name: "windows-sysproxy",

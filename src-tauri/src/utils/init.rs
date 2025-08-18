@@ -396,6 +396,10 @@ pub fn init_scheme() -> Result<()> {
     }
     Ok(())
 }
+#[cfg(target_os = "android")]
+pub fn init_scheme() -> Result<()> {
+    Ok(())
+}
 #[cfg(target_os = "macos")]
 pub fn init_scheme() -> Result<()> {
     Ok(())

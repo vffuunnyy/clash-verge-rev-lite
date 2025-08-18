@@ -203,7 +203,6 @@ interface IProfileItem {
   home?: string;
   support_url?: string;
   announce?: string;
-  announce_url?: string;
 }
 
 interface IProfileOption {
@@ -211,7 +210,6 @@ interface IProfileOption {
   with_proxy?: boolean;
   self_proxy?: boolean;
   update_interval?: number;
-  update_always?: boolean;
   timeout_seconds?: number;
   danger_accept_invalid_certs?: boolean;
   merge?: string;
@@ -754,7 +752,6 @@ interface IVergeConfig {
   enable_global_hotkey?: boolean;
   enable_dns_settings?: boolean;
   primary_action?: "tun-mode" | "system-proxy";
-  enable_send_hwid?: boolean;
   proxy_auto_config?: boolean;
   pac_file_content?: string;
   proxy_host?: string;
