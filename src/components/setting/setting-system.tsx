@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useLockFn } from "ahooks";
 import { mutate } from "swr";
@@ -43,6 +43,7 @@ import {
   Power,
   BellOff,
   Repeat,
+  Fingerprint,
 } from "lucide-react";
 
 // Модальные окна
@@ -55,6 +56,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useProfiles } from "@/hooks/use-profiles";
 
 const isWIN = getSystem() === "windows";
 interface Props {
@@ -104,6 +106,12 @@ const SettingSystem = ({ onError }: Props) => {
   const { t } = useTranslation();
   const { verge, patchVerge, mutateVerge } = useVerge();
   const { installServiceAndRestartCore } = useServiceInstaller();
+
+  const { profiles } = useProfiles();
+  const hasProfiles = useMemo(() => {
+    const items = profiles?.items ?? [];
+    return items.some((p) => p.type === "local" || p.type === "remote");
+  }, [profiles]);
 
   const {
     actualState: systemProxyActualState,
@@ -253,14 +261,17 @@ const SettingSystem = ({ onError }: Props) => {
                 );
               }
               if (e) {
-                return patchVerge({ enable_tun_mode: true, enable_system_proxy: false });
+                return patchVerge({
+                  enable_tun_mode: true,
+                  enable_system_proxy: false,
+                });
               } else {
                 return patchVerge({ enable_tun_mode: false });
               }
             }}
             onCatch={onError}
           >
-            <Switch disabled={!isTunAvailable} />
+            <Switch disabled={!isTunAvailable || !hasProfiles} />
           </GuardState>
         </SettingRow>
 
@@ -296,7 +307,7 @@ const SettingSystem = ({ onError }: Props) => {
             }}
             onCatch={onError}
           >
-            <Switch />
+            <Switch disabled={!hasProfiles} />
           </GuardState>
         </SettingRow>
 
@@ -388,6 +399,22 @@ const SettingSystem = ({ onError }: Props) => {
                 </SelectItem>
               </SelectContent>
             </Select>
+          </GuardState>
+        </SettingRow>
+
+        <SettingRow
+          label={<LabelWithIcon icon={Fingerprint} text={t("Send HWID")} />}
+        >
+          <GuardState
+            value={verge?.enable_send_hwid ?? true}
+            valueProps="checked"
+            onChangeProps="onCheckedChange"
+            onFormat={onSwitchFormat}
+            onChange={(e) => onChangeData({ enable_send_hwid: e })}
+            onGuard={(e) => patchVerge({ enable_send_hwid: e })}
+            onCatch={onError}
+          >
+            <Switch disabled={true} />
           </GuardState>
         </SettingRow>
       </div>

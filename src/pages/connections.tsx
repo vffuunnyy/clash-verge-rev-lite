@@ -8,7 +8,6 @@ import React, {
 import { useLockFn } from "ahooks";
 import { Virtuoso } from "react-virtuoso";
 import { useTranslation } from "react-i18next";
-import { useNavigate } from "react-router-dom";
 import { useConnectionSetting } from "@/services/states";
 import { useVisibility } from "@/hooks/use-visibility";
 import { useAppData } from "@/providers/app-data-provider";
@@ -16,7 +15,6 @@ import { closeAllConnections } from "@/services/api";
 import parseTraffic from "@/utils/parse-traffic";
 import { cn } from "@root/lib/utils";
 
-// Компоненты
 import { BaseEmpty } from "@/components/base";
 import { ConnectionItem } from "@/components/connection/connection-item";
 import { ConnectionTable } from "@/components/connection/connection-table";
@@ -24,10 +22,7 @@ import {
   ConnectionDetail,
   ConnectionDetailRef,
 } from "@/components/connection/connection-detail";
-import {
-  BaseSearchBox,
-  type SearchState,
-} from "@/components/base/base-search-box";
+import { BaseSearchBox } from "@/components/base/base-search-box";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -36,14 +31,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+
 import { Separator } from "@/components/ui/separator";
 import {
   Tooltip,
@@ -52,7 +40,6 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-// Иконки
 import {
   List,
   Table2,
@@ -60,20 +47,39 @@ import {
   PauseCircle,
   ArrowDown,
   ArrowUp,
-  Menu,
 } from "lucide-react";
+import { SidebarTrigger } from "@/components/ui/sidebar";
+
+interface IConnectionsItem {
+  id: string;
+  metadata: {
+    host: string;
+    destinationIP: string;
+    process?: string;
+  };
+  start?: string;
+  curUpload?: number;
+  curDownload?: number;
+}
+
+interface IConnections {
+  uploadTotal: number;
+  downloadTotal: number;
+  connections: IConnectionsItem[];
+  data: IConnectionsItem[];
+}
+
+type OrderFunc = (list: IConnectionsItem[]) => IConnectionsItem[];
 
 const initConn: IConnections = {
   uploadTotal: 0,
   downloadTotal: 0,
   connections: [],
+  data: [],
 };
-
-type OrderFunc = (list: IConnectionsItem[]) => IConnectionsItem[];
 
 const ConnectionsPage = () => {
   const { t } = useTranslation();
-  const navigate = useNavigate();
   const pageVisible = useVisibility();
   const [match, setMatch] = useState(() => (_: string) => true);
   const [curOrderOpt, setOrderOpt] = useState("Default");
@@ -88,9 +94,10 @@ const ConnectionsPage = () => {
           new Date(b.start || "0").getTime()! -
           new Date(a.start || "0").getTime()!,
       ),
-    "Upload Speed": (list) => list.sort((a, b) => b.curUpload! - a.curUpload!),
+    "Upload Speed": (list) =>
+      list.sort((a, b) => (b.curUpload ?? 0) - (a.curUpload ?? 0)),
     "Download Speed": (list) =>
-      list.sort((a, b) => b.curDownload! - a.curDownload!),
+      list.sort((a, b) => (b.curDownload ?? 0) - (a.curDownload ?? 0)),
   };
 
   const [isPaused, setIsPaused] = useState(false);
@@ -102,6 +109,7 @@ const ConnectionsPage = () => {
       uploadTotal: connections.uploadTotal,
       downloadTotal: connections.downloadTotal,
       connections: connections.data,
+      data: connections.data,
     };
     if (isPaused) return frozenData ?? currentData;
     return currentData;
@@ -158,6 +166,7 @@ const ConnectionsPage = () => {
           uploadTotal: connections.uploadTotal,
           downloadTotal: connections.downloadTotal,
           connections: connections.data,
+          data: connections.data,
         });
       } else {
         setFrozenData(null);
@@ -166,24 +175,18 @@ const ConnectionsPage = () => {
     });
   }, [connections]);
 
-  const menuItems = [
-    { label: t("Home"), path: "/home" },
-    { label: t("Profiles"), path: "/profile" },
-    { label: t("Settings"), path: "/settings" },
-    { label: t("Logs"), path: "/logs" },
-    { label: t("Proxies"), path: "/proxies" },
-    { label: t("Rules"), path: "/rules" },
-  ];
+  const headerHeight = "7rem";
 
   return (
-    <div className="h-full w-full relative">
+    <div className="relative h-full w-full">
       <div
-        className={cn(
-          "absolute top-0 left-0 right-0 z-10 p-4 transition-all duration-200",
-          { "bg-background/80 backdrop-blur-sm shadow-sm": isScrolled },
-        )}
+        className="absolute top-0 left-0 right-0 z-20 p-4 bg-background/80 backdrop-blur-sm"
+        style={{ height: headerHeight }}
       >
         <div className="flex justify-between items-center">
+          <div className="w-10">
+            <SidebarTrigger />
+          </div>
           <h2 className="text-2xl font-semibold tracking-tight">
             {t("Connections")}
           </h2>
@@ -245,26 +248,6 @@ const ConnectionsPage = () => {
               <Button size="sm" variant="destructive" onClick={onCloseAll}>
                 {t("Close All")}
               </Button>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" title={t("Menu")}>
-                    <Menu className="h-5 w-5" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuLabel>{t("Menu")}</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  {menuItems.map((item) => (
-                    <DropdownMenuItem
-                      key={item.path}
-                      onSelect={() => navigate(item.path)}
-                      disabled={location.pathname === item.path}
-                    >
-                      {item.label}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
             </div>
           </TooltipProvider>
         </div>
@@ -292,11 +275,15 @@ const ConnectionsPage = () => {
         </div>
       </div>
 
-      <div className="absolute top-0 left-0 right-0 bottom-0 pt-28">
+      <div
+        ref={scrollerRefCallback}
+        className="absolute left-0 right-0 bottom-0 overflow-y-auto"
+        style={{ top: headerHeight }}
+      >
         {filterConn.length === 0 ? (
           <BaseEmpty />
         ) : isTableLayout ? (
-          <div className="p-4 pt-0 h-full w-full">
+          <div className="p-4 pt-0">
             <ConnectionTable
               connections={filterConn}
               onShowDetail={(detail) => detailRef.current?.open(detail)}

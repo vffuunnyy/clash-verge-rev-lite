@@ -13,12 +13,14 @@ import {
   patchProfile,
   importProfile,
   enhanceProfiles,
+  createProfileFromShareLink,
 } from "@/services/cmds";
 import { useProfiles } from "@/hooks/use-profiles";
 import { showNotice } from "@/services/noticeService";
 import { version } from "@root/package.json";
 
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
@@ -72,6 +74,7 @@ export const ProfileViewer = forwardRef<ProfileViewerRef, Props>(
     const [isCheckingUrl, setIsCheckingUrl] = useState(false);
     const [isImporting, setIsImporting] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [selectedTemplate, setSelectedTemplate] = useState("default");
 
     const form = useForm<IProfileItem>({
       defaultValues: {
@@ -136,14 +139,11 @@ export const ProfileViewer = forwardRef<ProfileViewerRef, Props>(
       setIsCheckingUrl(true);
 
       const handler = setTimeout(() => {
-        try {
-          new URL(importUrl);
-          setIsUrlValid(true);
-        } catch (error) {
-          setIsUrlValid(false);
-        } finally {
-          setIsCheckingUrl(false);
-        }
+        const isValid = /^(https?|vmess|vless|ss|socks|trojan):\/\//.test(
+          importUrl,
+        );
+        setIsUrlValid(isValid);
+        setIsCheckingUrl(false);
       }, 500);
       return () => {
         clearTimeout(handler);
@@ -151,30 +151,52 @@ export const ProfileViewer = forwardRef<ProfileViewerRef, Props>(
     }, [importUrl]);
 
     const handleImport = useLockFn(async () => {
-      if (!importUrl) return;
+      if (!importUrl || !isUrlValid) return;
       setIsImporting(true);
+
+      const isShareLink = /^(vmess|vless|ss|socks|trojan):\/\//.test(importUrl);
+
       try {
-        await importProfile(importUrl);
-        showNotice("success", t("Profile Imported Successfully"));
+        if (isShareLink) {
+          await createProfileFromShareLink(importUrl, selectedTemplate);
+          showNotice("success", t("Profile created from link successfully"));
+        } else {
+          await importProfile(importUrl);
+          showNotice("success", t("Profile Imported Successfully"));
+        }
         props.onChange();
         await enhanceProfiles();
         setOpen(false);
-      } catch (err) {
-        showNotice("info", t("Import failed, retrying with Clash proxy..."));
-        try {
-          await importProfile(importUrl, {
-            with_proxy: false,
-            self_proxy: true,
-          });
-          showNotice("success", t("Profile Imported with Clash proxy"));
-          props.onChange();
-          await enhanceProfiles();
-          setOpen(false);
-        } catch (retryErr: any) {
-          showNotice(
-            "error",
-            `${t("Import failed even with Clash proxy")}: ${retryErr?.message || retryErr.toString()}`,
+      } catch (err: any) {
+        const errorMessage =
+          typeof err === "string" ? err : err.message || String(err);
+        const lowerErrorMessage = errorMessage.toLowerCase();
+        if (
+          lowerErrorMessage.includes("device") ||
+          lowerErrorMessage.includes("устройств")
+        ) {
+          window.dispatchEvent(
+            new CustomEvent("show-hwid-error", { detail: errorMessage }),
           );
+        } else if (!isShareLink && errorMessage.includes("failed to fetch")) {
+          showNotice("info", t("Import failed, retrying with Clash proxy..."));
+          try {
+            await importProfile(importUrl, {
+              with_proxy: false,
+              self_proxy: true,
+            });
+            showNotice("success", t("Profile Imported with Clash proxy"));
+            props.onChange();
+            await enhanceProfiles();
+            setOpen(false);
+          } catch (retryErr: any) {
+            showNotice(
+              "error",
+              `${t("Import failed even with Clash proxy")}: ${retryErr?.message || retryErr.toString()}`,
+            );
+          }
+        } else {
+          showNotice("error", errorMessage);
         }
       } finally {
         setIsImporting(false);
@@ -289,10 +311,32 @@ export const ProfileViewer = forwardRef<ProfileViewerRef, Props>(
                 </Button>
                 {!isUrlValid && importUrl && (
                   <p className="text-sm text-destructive px-1">
-                    {t("Please enter a valid URL")}
+                    {t("Invalid Profile URL")}
                   </p>
                 )}
               </div>
+
+              {/^(vmess|vless|ss|socks|trojan):\/\//.test(importUrl) && (
+                <div className="space-y-2">
+                  <Label>{t("Template")}</Label>
+                  <Select
+                    value={selectedTemplate}
+                    onValueChange={setSelectedTemplate}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a template..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="default">
+                        {t("Default Template")}
+                      </SelectItem>
+                      <SelectItem value="without_ru">
+                        {t("Template without RU Rules")}
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
 
               <Button
                 variant="outline"
@@ -440,8 +484,23 @@ export const ProfileViewer = forwardRef<ProfileViewerRef, Props>(
                           <FormLabel>User Agent</FormLabel>
                           <FormControl>
                             <Input
-                              placeholder={`clash-verge/v${version}`}
+                              placeholder={`koala-clash/v${version}`}
                               {...field}
+                            />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={control}
+                      name="option.update_always"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between">
+                          <FormLabel>{t("Update on Startup")}</FormLabel>
+                          <FormControl>
+                            <Switch
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
                             />
                           </FormControl>
                         </FormItem>

@@ -66,7 +66,7 @@ impl IProfiles {
         help::save_yaml(
             &dirs::profiles_path()?,
             self,
-            Some("# Profiles Config for Clash Verge"),
+            Some("# Profiles Config for Koala Clash"),
         )
     }
 
@@ -221,6 +221,7 @@ impl IProfiles {
                     each.updated = item.updated;
                     each.home = item.home;
                     each.announce = item.announce;
+                    each.announce_url = item.announce_url;
                     each.support_url = item.support_url;
                     each.name = item.name;
                     each.url = item.url;
@@ -535,7 +536,7 @@ impl IProfiles {
                 if Self::is_profile_file(file_name) {
                     // 检查是否为全局扩展文件
                     if protected_files.contains(file_name) {
-                        log::debug!(target: "app", "保护全局扩展配置文件: {file_name}");
+                        log::debug!(target: "app", "Protect global extension config file: {file_name}");
                         continue;
                     }
 
@@ -544,11 +545,11 @@ impl IProfiles {
                         match std::fs::remove_file(&path) {
                             Ok(_) => {
                                 deleted_files.push(file_name.to_string());
-                                log::info!(target: "app", "已清理冗余文件: {file_name}");
+                                log::info!(target: "app", "Cleaned up redundant file: {file_name}");
                             }
                             Err(e) => {
                                 failed_deletions.push(format!("{file_name}: {e}"));
-                                log::warn!(target: "app", "清理文件失败: {file_name} - {e}");
+                                log::warn!(target: "app", "Failed to clean file: {file_name} - {e}");
                             }
                         }
                     }
@@ -678,14 +679,14 @@ impl IProfiles {
                 if !result.deleted_files.is_empty() {
                     log::info!(
                         target: "app",
-                        "自动清理完成，删除了 {} 个冗余文件",
+                        "Auto cleanup completed, deleted {} redundant files",
                         result.deleted_files.len()
                     );
                 }
                 Ok(())
             }
             Err(e) => {
-                log::warn!(target: "app", "自动清理失败: {e}");
+                log::warn!(target: "app", "Auto cleanup failed: {e}");
                 Ok(())
             }
         }

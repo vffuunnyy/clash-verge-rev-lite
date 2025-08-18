@@ -74,6 +74,8 @@ pub struct IVerge {
     /// enable dns settings - this controls whether dns_config.yaml is applied
     pub enable_dns_settings: Option<bool>,
 
+    pub enable_send_hwid: Option<bool>,
+
     pub primary_action: Option<String>,
 
     /// always use default bypass
@@ -236,7 +238,7 @@ pub struct IVergeTheme {
 
 impl IVerge {
     /// 有效的clash核心名称
-    pub const VALID_CLASH_CORES: &'static [&'static str] = &["verge-mihomo", "verge-mihomo-alpha"];
+    pub const VALID_CLASH_CORES: &'static [&'static str] = &["koala-mihomo", "koala-mihomo-alpha"];
 
     /// 验证并修正配置文件中的clash_core值
     pub fn validate_and_fix_config() -> Result<()> {
@@ -255,10 +257,10 @@ impl IVerge {
                     warn,
                     Type::Config,
                     true,
-                    "启动时发现无效的clash_core配置: '{}', 将自动修正为 'verge-mihomo'",
+                    "启动时发现无效的clash_core配置: '{}', 将自动修正为 'koala-mihomo'",
                     core
                 );
-                config.clash_core = Some("verge-mihomo".to_string());
+                config.clash_core = Some("koala-mihomo".to_string());
                 needs_fix = true;
             }
         } else {
@@ -266,16 +268,16 @@ impl IVerge {
                 info,
                 Type::Config,
                 true,
-                "启动时发现未配置clash_core, 将设置为默认值 'verge-mihomo'"
+                "启动时发现未配置clash_core, 将设置为默认值 'koala-mihomo'"
             );
-            config.clash_core = Some("verge-mihomo".to_string());
+            config.clash_core = Some("koala-mihomo".to_string());
             needs_fix = true;
         }
 
         // 修正后保存配置
         if needs_fix {
             logging!(info, Type::Config, true, "正在保存修正后的配置文件...");
-            help::save_yaml(&config_path, &config, Some("# Clash Verge Config"))?;
+            help::save_yaml(&config_path, &config, Some("# Koala Clash Config"))?;
             logging!(
                 info,
                 Type::Config,
@@ -319,7 +321,7 @@ impl IVerge {
     pub fn get_valid_clash_core(&self) -> String {
         self.clash_core
             .clone()
-            .unwrap_or_else(|| "verge-mihomo".to_string())
+            .unwrap_or_else(|| "koala-mihomo".to_string())
     }
 
     fn get_system_language() -> String {
@@ -338,18 +340,17 @@ impl IVerge {
     }
 
     pub fn new() -> Self {
-        match dirs::verge_path().and_then(|path| help::read_yaml::<IVerge>(&path)) {
-            Ok(config) => config,
-            Err(err) => {
+        dirs::verge_path()
+            .and_then(|path| help::read_yaml::<IVerge>(&path))
+            .unwrap_or_else(|err| {
                 log::error!(target: "app", "{err}");
                 Self::template()
-            }
-        }
+            })
     }
 
     pub fn template() -> Self {
         Self {
-            clash_core: Some("verge-mihomo".into()),
+            clash_core: Some("koala-mihomo".into()),
             language: Some(Self::get_system_language()),
             theme_mode: Some("system".into()),
             #[cfg(not(target_os = "windows"))]
@@ -403,6 +404,7 @@ impl IVerge {
             enable_auto_light_weight_mode: Some(false),
             auto_light_weight_minutes: Some(10),
             enable_dns_settings: Some(false),
+            enable_send_hwid: Some(true),
             primary_action: Some("tun-mode".into()),
             home_cards: None,
             service_state: None,
@@ -412,7 +414,7 @@ impl IVerge {
 
     /// Save IVerge App Config
     pub fn save_file(&self) -> Result<()> {
-        help::save_yaml(&dirs::verge_path()?, &self, Some("# Clash Verge Config"))
+        help::save_yaml(&dirs::verge_path()?, &self, Some("# Koala Clash Config"))
     }
 
     /// patch verge config
@@ -492,6 +494,7 @@ impl IVerge {
         patch!(enable_auto_light_weight_mode);
         patch!(auto_light_weight_minutes);
         patch!(enable_dns_settings);
+        patch!(enable_send_hwid);
         patch!(primary_action);
         patch!(home_cards);
         patch!(service_state);
@@ -588,6 +591,7 @@ pub struct IVergeResponse {
     pub enable_auto_light_weight_mode: Option<bool>,
     pub auto_light_weight_minutes: Option<u64>,
     pub enable_dns_settings: Option<bool>,
+    pub enable_send_hwid: Option<bool>,
     pub primary_action: Option<String>,
     pub home_cards: Option<serde_json::Value>,
     pub enable_hover_jump_navigator: Option<bool>,
@@ -661,6 +665,7 @@ impl From<IVerge> for IVergeResponse {
             enable_auto_light_weight_mode: verge.enable_auto_light_weight_mode,
             auto_light_weight_minutes: verge.auto_light_weight_minutes,
             enable_dns_settings: verge.enable_dns_settings,
+            enable_send_hwid: verge.enable_send_hwid,
             primary_action: verge.primary_action,
             home_cards: verge.home_cards,
             enable_hover_jump_navigator: verge.enable_hover_jump_navigator,

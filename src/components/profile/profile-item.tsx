@@ -23,7 +23,6 @@ import { open } from "@tauri-apps/plugin-shell";
 import { ProxiesEditorViewer } from "./proxies-editor-viewer";
 import { cn } from "@root/lib/utils";
 
-// --- Компоненты shadcn/ui ---
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
@@ -46,7 +45,6 @@ import {
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 
-// --- Иконки ---
 import {
   GripVertical,
   File as FileIcon,
@@ -56,6 +54,7 @@ import {
   Loader2,
   Info,
   DownloadCloud,
+  Download,
   Trash2,
   Edit3,
   FileText as FileTextIcon,
@@ -67,13 +66,12 @@ import {
   CheckCircle,
   Infinity,
   RefreshCw,
+  Network,
 } from "lucide-react";
 import { t } from "i18next";
 
-// Активируем плагин для dayjs
 dayjs.extend(relativeTime);
 
-// --- Вспомогательные функции ---
 const parseUrl = (url?: string): string | undefined => {
   if (!url) return undefined;
   try {
@@ -301,6 +299,12 @@ export const ProfileItem = (props: Props) => {
     isDestructive: true,
   };
 
+  const MAX_NAME_LENGTH = 25;
+  const truncatedName =
+    name.length > MAX_NAME_LENGTH
+      ? `${name.slice(0, MAX_NAME_LENGTH)}...`
+      : name;
+
   return (
     <div ref={setNodeRef} style={style} {...attributes}>
       <ContextMenu>
@@ -342,10 +346,7 @@ export const ProfileItem = (props: Props) => {
                   ) : null}
                 </div>
                 <div className="flex items-center flex-shrink-0">
-                  <Badge
-                    variant={type === "local" ? "secondary" : "outline"}
-                    className="text-xs"
-                  >
+                  <Badge variant="outline" className="text-xs shadow-sm">
                     {type}
                   </Badge>
                 </div>
@@ -384,20 +385,20 @@ export const ProfileItem = (props: Props) => {
                     )}
                   </div>
                 </div>
-              </div>
-            </div>
-
-            {hasExtra && total > 0 && (
-              <div className="relative h-5">
-                <Progress value={progress} className="h-full rounded-none" />
-                <div className="absolute inset-0 flex items-center justify-between px-2 text-xs text-white/90 font-medium">
-                  <span>
-                    {parseTraffic(download)}↓ / {parseTraffic(upload)}↑
-                  </span>
-                  <span>{parseTraffic(total)}</span>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <Download className="h-3 w-3 inline mr-1.5" />
+                    <span className="pr-5">{parseTraffic(download)}</span>
+                    <Network className="h-3 w-3 inline mr-1.5" />
+                    {total > 0 ? (
+                      <span>{parseTraffic(total)}</span>
+                    ) : (
+                      <Infinity className="h-3 w-3 inline mr-1.5" />
+                    )}
+                  </div>
                 </div>
               </div>
-            )}
+            </div>
           </Card>
         </ContextMenuTrigger>
 
@@ -405,7 +406,6 @@ export const ProfileItem = (props: Props) => {
           className="w-56"
           onClick={(e) => e.stopPropagation()}
         >
-          {/* Объединяем все части меню */}
           {[...homeMenuItem, ...mainMenuItems].map((item) => (
             <ContextMenuItem
               key={item.label}
@@ -420,7 +420,7 @@ export const ProfileItem = (props: Props) => {
           <ContextMenuSub>
             <ContextMenuSubTrigger disabled={!hasUrl || isLoading}>
               <DownloadCloud className="mr-2 h-4 w-4" />
-              <span>{t("Update")}</span>
+              <span className="px-2">{t("Update")}</span>
             </ContextMenuSubTrigger>
             <ContextMenuPortal>
               <ContextMenuSubContent>
@@ -458,7 +458,6 @@ export const ProfileItem = (props: Props) => {
         </ContextMenuContent>
       </ContextMenu>
 
-      {/* Модальные окна для редактирования */}
       {fileOpen && (
         <EditorViewer
           open={true}
@@ -478,10 +477,10 @@ export const ProfileItem = (props: Props) => {
         <RulesEditorViewer
           open={true}
           onClose={() => setRulesOpen(false)}
-          profileUid={uid} // <-- Был 'uid', стал 'profileUid'
+          profileUid={uid}
           property={option?.rules ?? ""}
-          groupsUid={option?.groups ?? ""} // <-- Добавлен недостающий пропс
-          mergeUid={option?.merge ?? ""} // <-- Добавлен недостающий пропс
+          groupsUid={option?.groups ?? ""}
+          mergeUid={option?.merge ?? ""}
           onSave={onSave}
         />
       )}
@@ -490,7 +489,7 @@ export const ProfileItem = (props: Props) => {
         <ProxiesEditorViewer
           open={true}
           onClose={() => setProxiesOpen(false)}
-          profileUid={uid} // <-- Был 'uid', стал 'profileUid'
+          profileUid={uid}
           property={option?.proxies ?? ""}
           onSave={onSave}
         />
@@ -500,10 +499,10 @@ export const ProfileItem = (props: Props) => {
         <GroupsEditorViewer
           open={true}
           onClose={() => setGroupsOpen(false)}
-          profileUid={uid} // <-- Был 'uid', стал 'profileUid'
+          profileUid={uid}
           property={option?.groups ?? ""}
-          proxiesUid={option?.proxies ?? ""} // <-- Добавлен недостающий пропс
-          mergeUid={option?.merge ?? ""} // <-- Добавлен недостающий пропс
+          proxiesUid={option?.proxies ?? ""}
+          mergeUid={option?.merge ?? ""}
           onSave={onSave}
         />
       )}
@@ -512,7 +511,7 @@ export const ProfileItem = (props: Props) => {
         open={confirmOpen}
         onOpenChange={setConfirmOpen}
         onConfirm={onDelete}
-        title={t("Delete Profile", { name })}
+        title={t("Delete Profile", { name: truncatedName })}
         description={t("This action cannot be undone.")}
       />
     </div>
