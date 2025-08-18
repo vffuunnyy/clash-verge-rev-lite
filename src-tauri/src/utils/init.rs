@@ -385,7 +385,7 @@ pub fn init_scheme() -> Result<()> {
 pub fn init_scheme() -> Result<()> {
     let output = std::process::Command::new("xdg-mime")
         .arg("default")
-        .arg("koala_clash.desktop")
+        .arg("koala-clash.desktop")
         .arg("x-scheme-handler/clash")
         .output()?;
     if !output.status.success() {

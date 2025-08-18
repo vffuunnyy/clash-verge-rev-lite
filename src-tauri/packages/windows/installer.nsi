@@ -511,20 +511,20 @@ FunctionEnd
 
 !macro StartKoalaService
   ; Check if the service exists
-  SimpleSC::ExistsService "koala_clash_service"
+  SimpleSC::ExistsService "koala-clash_service"
   Pop $0  ; 0：service exists；other: service not exists
   ; Service exists
   ${If} $0 == 0
     Push $0
     ; Check if the service is running
-    SimpleSC::ServiceIsRunning "koala_clash_service"
+    SimpleSC::ServiceIsRunning "koala-clash_service"
     Pop $0 ; returns an errorcode (<>0) otherwise success (0)
     Pop $1 ; returns 1 (service is running) - returns 0 (service is not running)
     ${If} $0 == 0
       Push $0
       ${If} $1 == 0
             DetailPrint "Restart Koala Clash Service..."
-            SimpleSC::StartService "koala_clash_service" "" 30
+            SimpleSC::StartService "koala-clash_service" "" 30
       ${EndIf}
     ${ElseIf} $0 != 0
           Push $0
@@ -537,24 +537,24 @@ FunctionEnd
 
 !macro RemoveKoalaService
   ; Check if the service exists
-  SimpleSC::ExistsService "koala_clash_service"
+  SimpleSC::ExistsService "koala-clash_service"
   Pop $0  ; 0：service exists；other: service not exists
   ; Service exists
   ${If} $0 == 0
     Push $0
     ; Check if the service is running
-    SimpleSC::ServiceIsRunning "koala_clash_service"
+    SimpleSC::ServiceIsRunning "koala-clash_service"
     Pop $0 ; returns an errorcode (<>0) otherwise success (0)
     Pop $1 ; returns 1 (service is running) - returns 0 (service is not running)
     ${If} $0 == 0
       Push $0
       ${If} $1 == 1
         DetailPrint "Stop Koala Clash Service..."
-        SimpleSC::StopService "koala_clash_service" 1 30
+        SimpleSC::StopService "koala-clash_service" 1 30
         Pop $0 ; returns an errorcode (<>0) otherwise success (0)
         ${If} $0 == 0
               DetailPrint "Removing Koala Clash Service..."
-              SimpleSC::RemoveService "koala_clash_service"
+              SimpleSC::RemoveService "koala-clash_service"
         ${ElseIf} $0 != 0
                   Push $0
                   SimpleSC::GetErrorMessage
@@ -563,7 +563,7 @@ FunctionEnd
         ${EndIf}
   ${ElseIf} $1 == 0
         DetailPrint "Removing Koala Clash Service..."
-        SimpleSC::RemoveService "koala_clash_service"
+        SimpleSC::RemoveService "koala-clash_service"
   ${EndIf}
     ${ElseIf} $0 != 0
           Push $0

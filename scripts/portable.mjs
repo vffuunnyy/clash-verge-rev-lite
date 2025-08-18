@@ -35,7 +35,7 @@ async function resolvePortable() {
   }
   const zip = new AdmZip();
 
-  zip.addLocalFile(path.join(releaseDir, "koala_clash.exe"));
+  zip.addLocalFile(path.join(releaseDir, "koala-clash.exe"));
   zip.addLocalFile(path.join(releaseDir, "koala-mihomo.exe"));
   zip.addLocalFile(path.join(releaseDir, "koala-mihomo-alpha.exe"));
   zip.addLocalFolder(path.join(releaseDir, "resources"), "resources");
