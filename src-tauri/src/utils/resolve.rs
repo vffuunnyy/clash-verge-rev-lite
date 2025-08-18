@@ -335,12 +335,12 @@ pub fn create_window(is_show: bool) -> bool {
         "main", /* the unique window label */
         tauri::WebviewUrl::App("index.html".into()),
     )
-    .title("Koala Clash")
+    .title("Clash Verge Rev Lite")
     .center()
     .decorations(true)
     .fullscreen(false)
     .inner_size(DEFAULT_WIDTH as f64, DEFAULT_HEIGHT as f64)
-    .min_inner_size(1000.0, 800.0)
+    .min_inner_size(520.0, 520.0)
     .visible(true) // 立即显示窗口，避免用户等待
     .initialization_script(
         r#"
@@ -549,9 +549,10 @@ pub async fn resolve_scheme(param: String) -> Result<()> {
         }
     };
 
-    if link_parsed.scheme() == "clash" || link_parsed.scheme() == "koala-clash" {
+    if link_parsed.scheme() == "clash" || link_parsed.scheme() == "clash-verge" {
         let mut name: Option<String> = None;
         let mut url_param: Option<String> = None;
+        let mut use_hwid = true;
 
         for (key, value) in link_parsed.query_pairs() {
             match key.as_ref() {
@@ -564,12 +565,22 @@ pub async fn resolve_scheme(param: String) -> Result<()> {
             }
         }
 
+        let option = if use_hwid {
+            log::info!(target:"app", "HWID usage requested via deep link");
+            Some(PrfOption {
+                use_hwid: Some(true),
+                ..Default::default()
+            })
+        } else {
+            None
+        };
+
         match url_param {
             Some(url) => {
                 log::info!(target:"app", "decoded subscription url: {url}");
 
-                create_window(true);
-                match PrfItem::from_url(url.as_ref(), name, None, None).await {
+                create_window(false);
+                match PrfItem::from_url(url.as_ref(), name, None, option).await {
                     Ok(item) => {
                         let uid = item.uid.clone().unwrap();
                         let _ = wrap_err!(Config::profiles().data().append_item(item));

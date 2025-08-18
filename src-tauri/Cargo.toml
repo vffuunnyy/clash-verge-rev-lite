@@ -1,16 +1,16 @@
 [package]
-name = "koala-clash"
-version = "0.2.5"
-description = "koala clash"
-authors = ["zzzgydi", "wonfen", "MystiPanda", "coolcoala"]
+name = "clash-verge"
+version = "0.2.0"
+description = "clash verge"
+authors = ["zzzgydi", "wonfen", "MystiPanda", "coolcoala", "vffuunnyy"]
 license = "GPL-3.0-only"
 repository = "https://github.com/coolcoala/clash-verge-rev-lite.git"
-default-run = "koala-clash"
+default-run = "clash-verge"
 edition = "2021"
 build = "build.rs"
 
 [package.metadata.bundle]
-identifier = "io.github.koala-clash"
+identifier = "io.github.clash-verge-rev.clash-verge-rev"
 
 [build-dependencies]
 tauri-build = { version = "2.3.1", features = [] }
@@ -29,9 +29,9 @@ nanoid = "0.4"
 chrono = "0.4.41"
 
 [target.'cfg(desktop)'.dependencies]
-machine-uid = "0.5.3"
+machine-uid = "0.2"
 
-sysinfo = "0.36.1"
+sysinfo = "0.35.2"
 boa_engine = "0.20.0"
 serde_json = "1.0.140"
 serde_yaml = "0.9.34-deprecated"
@@ -48,7 +48,7 @@ tokio = { version = "1.45.1", features = [
   "sync",
 ] }
 serde = { version = "1.0.219", features = ["derive"] }
-reqwest = { version = "0.12.20", features = ["json", "rustls-tls", "cookies", "brotli", "gzip", "zstd"] }
+reqwest = { version = "0.12.20", features = ["json", "rustls-tls", "cookies"] }
 regex = "1.11.1"
 sysproxy = { git = "https://github.com/clash-verge-rev/sysproxy-rs" }
 image = "0.25.6"
@@ -116,7 +116,6 @@ users = "0.11.0"
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 tauri-plugin-autostart = "2.5.0"
 tauri-plugin-global-shortcut = "2.3.0"
-tauri-plugin-single-instance = "2"
 tauri-plugin-updater = "2.9.0"
 
 [features]

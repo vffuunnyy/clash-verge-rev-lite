@@ -5,9 +5,6 @@ import { UpdateViewer } from "../setting/mods/update-viewer";
 import { DialogRef } from "../base";
 import { useVerge } from "@/hooks/use-verge";
 import { Button } from "@/components/ui/button";
-import { t } from "i18next";
-import { Download, RefreshCw } from "lucide-react";
-import { useSidebar } from "../ui/sidebar";
 
 interface Props {
   className?: string;
@@ -17,7 +14,6 @@ export const UpdateButton = (props: Props) => {
   const { className } = props;
   const { verge } = useVerge();
   const { auto_check_update } = verge || {};
-  const { state: sidebarState } = useSidebar();
 
   const viewerRef = useRef<DialogRef>(null);
 
@@ -36,26 +32,15 @@ export const UpdateButton = (props: Props) => {
   return (
     <>
       <UpdateViewer ref={viewerRef} />
-      {sidebarState === "collapsed" ? (
-        <Button
-          variant="outline"
-          size="icon"
-          className={className}
-          onClick={() => viewerRef.current?.open()}
-        >
-          <Download />
-        </Button>
-      ) : (
-        <Button
-          variant="outline"
-          size="lg"
-          className={className}
-          onClick={() => viewerRef.current?.open()}
-        >
-          <Download />
-          {t("New update")}
-        </Button>
-      )}
+
+      <Button
+        variant="destructive"
+        size="sm"
+        className={className}
+        onClick={() => viewerRef.current?.open()}
+      >
+        New
+      </Button>
     </>
   );
 };

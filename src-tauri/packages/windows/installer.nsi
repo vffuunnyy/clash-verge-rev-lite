@@ -427,52 +427,52 @@ Function .onInit
   !endif
 FunctionEnd
 
-!macro CheckAllKoalaProcesses
-  ; Check if koala-clash-service.exe is running
+!macro CheckAllVergeProcesses
+  ; Check if clash-verge-service.exe is running
   !if "${INSTALLMODE}" == "currentUser"
-    nsis_tauri_utils::FindProcessCurrentUser "koala-clash-service.exe"
+    nsis_tauri_utils::FindProcessCurrentUser "clash-verge-service.exe"
   !else
-    nsis_tauri_utils::FindProcess "koala-clash-service.exe"
+    nsis_tauri_utils::FindProcess "clash-verge-service.exe"
   !endif
   Pop $R0
   ${If} $R0 = 0
-    DetailPrint "Kill koala-clash-service.exe..."
+    DetailPrint "Kill clash-verge-service.exe..."
     !if "${INSTALLMODE}" == "currentUser"
-      nsis_tauri_utils::KillProcessCurrentUser "koala-clash-service.exe"
+      nsis_tauri_utils::KillProcessCurrentUser "clash-verge-service.exe"
     !else
-      nsis_tauri_utils::KillProcess "koala-clash-service.exe"
+      nsis_tauri_utils::KillProcess "clash-verge-service.exe"
     !endif
   ${EndIf}
 
-  ; Check if koala-mihomo-alpha.exe is running
+  ; Check if verge-mihomo-alpha.exe is running
   !if "${INSTALLMODE}" == "currentUser"
-    nsis_tauri_utils::FindProcessCurrentUser "koala-mihomo-alpha.exe"
+    nsis_tauri_utils::FindProcessCurrentUser "verge-mihomo-alpha.exe"
   !else
-    nsis_tauri_utils::FindProcess "koala-mihomo-alpha.exe"
+    nsis_tauri_utils::FindProcess "verge-mihomo-alpha.exe"
   !endif
   Pop $R0
   ${If} $R0 = 0
-    DetailPrint "Kill koala-mihomo-alpha.exe..."
+    DetailPrint "Kill verge-mihomo-alpha.exe..."
     !if "${INSTALLMODE}" == "currentUser"
-      nsis_tauri_utils::KillProcessCurrentUser "koala-mihomo-alpha.exe"
+      nsis_tauri_utils::KillProcessCurrentUser "verge-mihomo-alpha.exe"
     !else
-      nsis_tauri_utils::KillProcess "koala-mihomo-alpha.exe"
+      nsis_tauri_utils::KillProcess "verge-mihomo-alpha.exe"
     !endif
   ${EndIf}
 
-  ; Check if koala-mihomo.exe is running
+  ; Check if verge-mihomo.exe is running
   !if "${INSTALLMODE}" == "currentUser"
-    nsis_tauri_utils::FindProcessCurrentUser "koala-mihomo.exe"
+    nsis_tauri_utils::FindProcessCurrentUser "verge-mihomo.exe"
   !else
-    nsis_tauri_utils::FindProcess "koala-mihomo.exe"
+    nsis_tauri_utils::FindProcess "verge-mihomo.exe"
   !endif
   Pop $R0
   ${If} $R0 = 0
-    DetailPrint "Kill koala-mihomo.exe..."
+    DetailPrint "Kill verge-mihomo.exe..."
     !if "${INSTALLMODE}" == "currentUser"
-      nsis_tauri_utils::KillProcessCurrentUser "koala-mihomo.exe"
+      nsis_tauri_utils::KillProcessCurrentUser "verge-mihomo.exe"
     !else
-      nsis_tauri_utils::KillProcess "koala-mihomo.exe"
+      nsis_tauri_utils::KillProcess "verge-mihomo.exe"
     !endif
   ${EndIf}
 
@@ -509,22 +509,22 @@ FunctionEnd
   ${EndIf}
 !macroend
 
-!macro StartKoalaService
+!macro StartVergeService
   ; Check if the service exists
-  SimpleSC::ExistsService "koala-clash_service"
+  SimpleSC::ExistsService "koala_clash_service"
   Pop $0  ; 0：service exists；other: service not exists
   ; Service exists
   ${If} $0 == 0
     Push $0
     ; Check if the service is running
-    SimpleSC::ServiceIsRunning "koala-clash_service"
+    SimpleSC::ServiceIsRunning "koala_clash_service"
     Pop $0 ; returns an errorcode (<>0) otherwise success (0)
     Pop $1 ; returns 1 (service is running) - returns 0 (service is not running)
     ${If} $0 == 0
       Push $0
       ${If} $1 == 0
             DetailPrint "Restart Koala Clash Service..."
-            SimpleSC::StartService "koala-clash_service" "" 30
+            SimpleSC::StartService "koala_clash_service" "" 30
       ${EndIf}
     ${ElseIf} $0 != 0
           Push $0
@@ -535,35 +535,35 @@ FunctionEnd
   ${EndIf}
 !macroend
 
-!macro RemoveKoalaService
+!macro RemoveVergeService
   ; Check if the service exists
-  SimpleSC::ExistsService "koala-clash_service"
+  SimpleSC::ExistsService "koala_clash_service"
   Pop $0  ; 0：service exists；other: service not exists
   ; Service exists
   ${If} $0 == 0
     Push $0
     ; Check if the service is running
-    SimpleSC::ServiceIsRunning "koala-clash_service"
+    SimpleSC::ServiceIsRunning "koala_clash_service"
     Pop $0 ; returns an errorcode (<>0) otherwise success (0)
     Pop $1 ; returns 1 (service is running) - returns 0 (service is not running)
     ${If} $0 == 0
       Push $0
       ${If} $1 == 1
         DetailPrint "Stop Koala Clash Service..."
-        SimpleSC::StopService "koala-clash_service" 1 30
+        SimpleSC::StopService "koala_clash_service" 1 30
         Pop $0 ; returns an errorcode (<>0) otherwise success (0)
         ${If} $0 == 0
               DetailPrint "Removing Koala Clash Service..."
-              SimpleSC::RemoveService "koala-clash_service"
+              SimpleSC::RemoveService "koala_clash_service"
         ${ElseIf} $0 != 0
                   Push $0
                   SimpleSC::GetErrorMessage
                   Pop $0
-                  MessageBox MB_OK|MB_ICONSTOP "Koala Clash Service Stop Error ($0)"
+                  MessageBox MB_OK|MB_ICONSTOP "Clash Verge Service Stop Error ($0)"
         ${EndIf}
   ${ElseIf} $1 == 0
         DetailPrint "Removing Koala Clash Service..."
-        SimpleSC::RemoveService "koala-clash_service"
+        SimpleSC::RemoveService "koala_clash_service"
   ${EndIf}
     ${ElseIf} $0 != 0
           Push $0
@@ -764,7 +764,7 @@ Section Install
   SetOutPath $INSTDIR
   nsExec::Exec 'netsh int tcp res'
   !insertmacro CheckIfAppIsRunning
-  !insertmacro CheckAllKoalaProcesses
+  !insertmacro CheckAllVergeProcesses
 
   ; 清理自启动注册表项
   DetailPrint "Cleaning auto-launch registry entries..."
@@ -772,32 +772,32 @@ Section Install
   StrCpy $R1 "Software\Microsoft\Windows\CurrentVersion\Run"
   
   SetRegView 64  
-  ; 清理旧版本的注册表项 (Koala Clash)
-  ReadRegStr $R2 HKCU "$R1" "Koala Clash"
+  ; 清理旧版本的注册表项 (Clash Verge)
+  ReadRegStr $R2 HKCU "$R1" "Clash Verge"
   ${If} $R2 != ""
-    DeleteRegValue HKCU "$R1" "Koala Clash"
+    DeleteRegValue HKCU "$R1" "Clash Verge"
   ${EndIf}
   
-  ReadRegStr $R2 HKLM "$R1" "Koala Clash"
+  ReadRegStr $R2 HKLM "$R1" "Clash Verge"
   ${If} $R2 != ""
-    DeleteRegValue HKLM "$R1" "Koala Clash"
+    DeleteRegValue HKLM "$R1" "Clash Verge"
   ${EndIf}
 
-  ; 清理新版本的注册表项 (koala-clash)
-  ReadRegStr $R2 HKCU "$R1" "koala-clash"
+  ; 清理新版本的注册表项 (clash-verge)
+  ReadRegStr $R2 HKCU "$R1" "clash-verge"
   ${If} $R2 != ""
-    DeleteRegValue HKCU "$R1" "koala-clash"
+    DeleteRegValue HKCU "$R1" "clash-verge"
   ${EndIf}
   
-  ReadRegStr $R2 HKLM "$R1" "koala-clash"
+  ReadRegStr $R2 HKLM "$R1" "clash-verge"
   ${If} $R2 != ""
-    DeleteRegValue HKLM "$R1" "koala-clash"
+    DeleteRegValue HKLM "$R1" "clash-verge"
   ${EndIf}
 
   ; Delete old files before installation
-    ; Delete koala-clash.desktop
-  IfFileExists "$INSTDIR\Koala Clash.exe" 0 +2
-    Delete "$INSTDIR\Koala Clash.exe"
+    ; Delete clash-verge.desktop
+  IfFileExists "$INSTDIR\Clash Verge.exe" 0 +2
+    Delete "$INSTDIR\Clash Verge.exe"
   
   ; Copy main executable
   File "${MAINBINARYSRCPATH}"
@@ -815,7 +815,7 @@ Section Install
     File /a "/oname={{this}}" "{{@key}}"
   {{/each}}
 
-  !insertmacro StartKoalaService
+  !insertmacro StartVergeService
 
   ; Create uninstaller
   WriteUninstaller "$INSTDIR\uninstall.exe"
@@ -918,11 +918,11 @@ FunctionEnd
 Section Uninstall
   ;删除 window-state.json 文件
   SetShellVarContext current
-  Delete "$APPDATA\io.github.koala-clash\window-state.json"
+  Delete "$APPDATA\io.github.clash-verge-rev.clash-verge-rev\window-state.json"
 
   !insertmacro CheckIfAppIsRunning
-  !insertmacro CheckAllKoalaProcesses
-  !insertmacro RemoveKoalaService
+  !insertmacro CheckAllVergeProcesses
+  !insertmacro RemoveVergeService
 
   ; 清理自启动注册表项
   DetailPrint "Cleaning auto-launch registry entries..."
@@ -930,26 +930,26 @@ Section Uninstall
   StrCpy $R1 "Software\Microsoft\Windows\CurrentVersion\Run"
   
   SetRegView 64
-  ; 清理旧版本的注册表项 (Koala Clash)
-  ReadRegStr $R2 HKCU "$R1" "Koala Clash"
+  ; 清理旧版本的注册表项 (Clash Verge)
+  ReadRegStr $R2 HKCU "$R1" "Clash Verge"
   ${If} $R2 != ""
-    DeleteRegValue HKCU "$R1" "Koala Clash"
+    DeleteRegValue HKCU "$R1" "Clash Verge"
   ${EndIf}
   
-  ReadRegStr $R2 HKLM "$R1" "Koala Clash"
+  ReadRegStr $R2 HKLM "$R1" "Clash Verge"
   ${If} $R2 != ""
-    DeleteRegValue HKLM "$R1" "Koala Clash"
+    DeleteRegValue HKLM "$R1" "Clash Verge"
   ${EndIf}
 
-  ; 清理新版本的注册表项 (koala-clash)
-  ReadRegStr $R2 HKCU "$R1" "koala-clash"
+  ; 清理新版本的注册表项 (clash-verge)
+  ReadRegStr $R2 HKCU "$R1" "clash-verge"
   ${If} $R2 != ""
-    DeleteRegValue HKCU "$R1" "koala-clash"
+    DeleteRegValue HKCU "$R1" "clash-verge"
   ${EndIf}
   
-  ReadRegStr $R2 HKLM "$R1" "koala-clash"
+  ReadRegStr $R2 HKLM "$R1" "clash-verge"
   ${If} $R2 != ""
-    DeleteRegValue HKLM "$R1" "koala-clash"
+    DeleteRegValue HKLM "$R1" "clash-verge"
   ${EndIf}
 
   ; Delete the app directory and its content from disk
@@ -966,9 +966,9 @@ Section Uninstall
     Delete "$INSTDIR\\{{this}}"
   {{/each}}
 
-  ; Delete koala-clash.desktop
-  IfFileExists "$INSTDIR\Koala Clash.exe" 0 +2
-    Delete "$INSTDIR\Koala Clash.exe"
+  ; Delete clash-verge.desktop
+  IfFileExists "$INSTDIR\Clash Verge.exe" 0 +2
+    Delete "$INSTDIR\Clash Verge.exe"
 
   ; Delete uninstaller
   Delete "$INSTDIR\uninstall.exe"
@@ -982,20 +982,20 @@ Section Uninstall
   !insertmacro UnpinShortcut "$SMPROGRAMS\$AppStartMenuFolder\${PRODUCTNAME}.lnk"
   !insertmacro UnpinShortcut "$DESKTOP\${PRODUCTNAME}.lnk"
   ; 兼容旧名称快捷方式
-  !insertmacro UnpinShortcut "$SMPROGRAMS\$AppStartMenuFolder\koala-clash.lnk"
-  !insertmacro UnpinShortcut "$DESKTOP\koala-clash.lnk"
+  !insertmacro UnpinShortcut "$SMPROGRAMS\$AppStartMenuFolder\clash-verge.lnk"
+  !insertmacro UnpinShortcut "$DESKTOP\clash-verge.lnk"
 
   ; Remove start menu shortcut
   !insertmacro MUI_STARTMENU_GETFOLDER Application $AppStartMenuFolder
   Delete "$SMPROGRAMS\$AppStartMenuFolder\${PRODUCTNAME}.lnk"
   ; 兼容旧名称快捷方式
-  Delete "$SMPROGRAMS\$AppStartMenuFolder\koala-clash.lnk"
+  Delete "$SMPROGRAMS\$AppStartMenuFolder\clash-verge.lnk"
   RMDir "$SMPROGRAMS\$AppStartMenuFolder"
 
   ; Remove desktop shortcuts
   Delete "$DESKTOP\${PRODUCTNAME}.lnk"
   ; 兼容旧名称快捷方式
-  Delete "$DESKTOP\koala-clash.lnk"
+  Delete "$DESKTOP\clash-verge.lnk"
 
   ; Remove registry information for add/remove programs
   !if "${INSTALLMODE}" == "both"
@@ -1017,7 +1017,7 @@ Section Uninstall
 
   ;删除 window-state.json 文件
   SetShellVarContext current
-  Delete "$APPDATA\io.github.koala-clash\window-state.json"
+  Delete "$APPDATA\io.github.clash-verge-rev.clash-verge-rev\window-state.json"
 
   ${GetOptions} $CMDLINE "/P" $R0
   IfErrors +2 0

@@ -5,3 +5,4 @@ export { BaseLoading } from "./base-loading";
 export { BaseErrorBoundary } from "./base-error-boundary";
 export { Switch } from "./base-switch";
 export { BaseLoadingOverlay } from "./base-loading-overlay";
+export { NoticeManager } from "./NoticeManager";

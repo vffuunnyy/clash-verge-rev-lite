@@ -201,9 +201,11 @@ const SettingVergeBasic = ({ onError }: Props) => {
               onFormat={(v) => v}
               onChange={(e) => onChangeData({ tray_event: e })}
               onGuard={(e) => patchVerge({ tray_event: e })}
-              onChangeProps="onValueChange"
             >
-              <Select>
+              <Select
+                onValueChange={(value) => onChangeData({ tray_event: value })}
+                value={tray_event}
+              >
                 <SelectTrigger className="w-40 h-8">
                   <SelectValue />
                 </SelectTrigger>
@@ -224,6 +226,41 @@ const SettingVergeBasic = ({ onError }: Props) => {
             </GuardState>
           </SettingRow>
         )}
+
+        <SettingRow
+          label={<LabelWithIcon icon={Copy} text={t("Copy Env Type")} />}
+          extra={
+            <TooltipIcon
+              tooltip={t("Copy")}
+              icon={<Copy className="h-4 w-4" />}
+              onClick={onCopyClashEnv}
+            />
+          }
+        >
+          <GuardState
+            value={env_type ?? (OS === "windows" ? "powershell" : "bash")}
+            onCatch={onError}
+            onFormat={(v) => v}
+            onChange={(e) => onChangeData({ env_type: e })}
+            onGuard={(e) => patchVerge({ env_type: e })}
+          >
+            <Select
+              onValueChange={(value) => onChangeData({ env_type: value })}
+              value={env_type}
+            >
+              <SelectTrigger className="w-36 h-8">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="bash">Bash</SelectItem>
+                <SelectItem value="fish">Fish</SelectItem>
+                <SelectItem value="nushell">Nushell</SelectItem>
+                <SelectItem value="cmd">CMD</SelectItem>
+                <SelectItem value="powershell">PowerShell</SelectItem>
+              </SelectContent>
+            </Select>
+          </GuardState>
+        </SettingRow>
 
         <SettingRow
           label={<LabelWithIcon icon={Home} text={t("Start Page")} />}
@@ -253,10 +290,59 @@ const SettingVergeBasic = ({ onError }: Props) => {
           </GuardState>
         </SettingRow>
 
-        {/*<SettingRow*/}
-        {/*  onClick={() => themeRef.current?.open()}*/}
-        {/*  label={<LabelWithIcon icon={SwatchBook} text={t("Theme Setting")} />}*/}
-        {/*/>*/}
+        <SettingRow
+          label={
+            <LabelWithIcon icon={FileTerminal} text={t("Startup Script")} />
+          }
+        >
+          <div className="flex items-center gap-2">
+            <Input
+              readOnly
+              value={startup_script ?? ""}
+              placeholder={t("Not Set")}
+              className="h-8 flex-1"
+            />
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8"
+              onClick={async () => {
+                const selected = await open({
+                  directory: false,
+                  multiple: false,
+                  filters: [
+                    { name: "Shell Script", extensions: ["sh", "bat", "ps1"] },
+                  ],
+                });
+                if (selected) {
+                  const path = Array.isArray(selected) ? selected[0] : selected;
+                  onChangeData({ startup_script: path });
+                  patchVerge({ startup_script: path });
+                }
+              }}
+            >
+              {t("Browse")}
+            </Button>
+            {startup_script && (
+              <Button
+                variant="destructive"
+                size="sm"
+                className="h-8"
+                onClick={async () => {
+                  onChangeData({ startup_script: "" });
+                  patchVerge({ startup_script: "" });
+                }}
+              >
+                {t("Clear")}
+              </Button>
+            )}
+          </div>
+        </SettingRow>
+
+        <SettingRow
+          onClick={() => themeRef.current?.open()}
+          label={<LabelWithIcon icon={SwatchBook} text={t("Theme Setting")} />}
+        />
         <SettingRow
           onClick={() => layoutRef.current?.open()}
           label={

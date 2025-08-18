@@ -37,7 +37,6 @@ interface IProxyGroup {
   now: string;
   hidden: boolean;
   all: (string | { name: string })[];
-  icon?: string;
 }
 
 // --- Вспомогательная функция для цвета задержки ---
@@ -113,7 +112,6 @@ export const ProxySelectors: React.FC = () => {
       (localStorage.getItem(STORAGE_KEY_SORT_TYPE) as ProxySortType) ||
       "default",
   );
-  const enable_group_icon = verge?.enable_group_icon ?? true;
 
   useEffect(() => {
     if (!proxies?.groups) return;
@@ -293,31 +291,21 @@ export const ProxySelectors: React.FC = () => {
             disabled={isGlobalMode || isDirectMode}
           >
             <SelectTrigger className="w-100">
-              <div className="flex items-center gap-2 truncate">
-                <span className="truncate">
-                  <SelectValue placeholder={t("Select a group...")} />
-                </span>
-              </div>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="truncate">
+                    <SelectValue placeholder={t("Select a group...")} />
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{selectedGroup}</p>
+                </TooltipContent>
+              </Tooltip>
             </SelectTrigger>
             <SelectContent>
               {selectorGroups.map((group: IProxyGroup) => (
                 <SelectItem key={group.name} value={group.name}>
-                  <div className="flex items-center gap-2">
-                    {enable_group_icon && group.icon && (
-                      <img
-                        src={
-                          group.icon.startsWith("data")
-                            ? group.icon
-                            : group.icon.startsWith("<svg")
-                              ? `data:image/svg+xml;base64,${btoa(group.icon)}`
-                              : group.icon
-                        }
-                        className="w-4 h-4 rounded-sm"
-                        alt={group.name}
-                      />
-                    )}
-                    <span>{group.name}</span>
-                  </div>
+                  {group.name}
                 </SelectItem>
               ))}
             </SelectContent>

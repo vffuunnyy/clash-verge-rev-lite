@@ -42,16 +42,16 @@ async function resolvePortable() {
 
   const zip = new AdmZip();
 
-  zip.addLocalFile(path.join(releaseDir, "Koala Clash.exe"));
-  zip.addLocalFile(path.join(releaseDir, "koala-mihomo.exe"));
-  zip.addLocalFile(path.join(releaseDir, "koala-mihomo-alpha.exe"));
+  zip.addLocalFile(path.join(releaseDir, "Clash Verge.exe"));
+  zip.addLocalFile(path.join(releaseDir, "verge-mihomo.exe"));
+  zip.addLocalFile(path.join(releaseDir, "verge-mihomo-alpha.exe"));
   zip.addLocalFolder(path.join(releaseDir, "resources"), "resources");
   zip.addLocalFolder(
     path.join(
       releaseDir,
-      `Microsoft.WebView2.FixedVersionRuntime.133.0.3065.92.${arch}`,
+      `Microsoft.WebView2.FixedVersionRuntime.109.0.1518.78.${arch}`,
     ),
-    `Microsoft.WebView2.FixedVersionRuntime.133.0.3065.92.${arch}`,
+    `Microsoft.WebView2.FixedVersionRuntime.109.0.1518.78.${arch}`,
   );
   zip.addLocalFolder(configDir, ".config");
 

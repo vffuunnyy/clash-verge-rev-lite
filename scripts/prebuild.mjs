@@ -191,8 +191,8 @@ function clashMetaAlpha() {
   const zipFile = `${name}-${META_ALPHA_VERSION}.${urlExt}`;
 
   return {
-    name: "koala-mihomo-alpha",
-    targetFile: `koala-mihomo-alpha-${SIDECAR_HOST}${isWin ? ".exe" : ""}`,
+    name: "verge-mihomo-alpha",
+    targetFile: `verge-mihomo-alpha-${SIDECAR_HOST}${isWin ? ".exe" : ""}`,
     exeFile,
     zipFile,
     downloadURL,
@@ -208,8 +208,8 @@ function clashMeta() {
   const zipFile = `${name}-${META_VERSION}.${urlExt}`;
 
   return {
-    name: "koala-mihomo",
-    targetFile: `koala-mihomo-${SIDECAR_HOST}${isWin ? ".exe" : ""}`,
+    name: "verge-mihomo",
+    targetFile: `verge-mihomo-${SIDECAR_HOST}${isWin ? ".exe" : ""}`,
     exeFile,
     zipFile,
     downloadURL,
@@ -397,7 +397,7 @@ const resolvePlugin = async () => {
 // service chmod
 const resolveServicePermission = async () => {
   const serviceExecutables = [
-    "koala-clash-service*",
+    "clash-verge-service*",
     "install-service*",
     "uninstall-service*",
   ];
@@ -445,14 +445,14 @@ async function resolveLocales() {
 /**
  * main
  */
-const SERVICE_URL = `https://github.com/coolcoala/koala-clash-service/releases/download/${SIDECAR_HOST}`;
+const SERVICE_URL = `https://github.com/clash-verge-rev/clash-verge-service/releases/download/${SIDECAR_HOST}`;
 
 const resolveService = () => {
   let ext = platform === "win32" ? ".exe" : "";
   let suffix = platform === "linux" ? "-" + SIDECAR_HOST : "";
   resolveResource({
-    file: "koala-clash-service" + suffix + ext,
-    downloadURL: `${SERVICE_URL}/koala-clash-service${ext}`,
+    file: "clash-verge-service" + suffix + ext,
+    downloadURL: `${SERVICE_URL}/clash-verge-service${ext}`,
   });
 };
 
@@ -505,13 +505,13 @@ const resolveWinSysproxy = () =>
 const tasks = [
   // { name: "clash", func: resolveClash, retry: 5 },
   {
-    name: "koala-mihomo-alpha",
+    name: "verge-mihomo-alpha",
     func: () =>
       getLatestAlphaVersion().then(() => resolveSidecar(clashMetaAlpha())),
     retry: 5,
   },
   {
-    name: "koala-mihomo",
+    name: "verge-mihomo",
     func: () =>
       getLatestReleaseVersion().then(() => resolveSidecar(clashMeta())),
     retry: 5,
