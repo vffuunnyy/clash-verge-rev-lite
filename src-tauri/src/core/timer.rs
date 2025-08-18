@@ -73,7 +73,7 @@ impl Timer {
         logging!(
             info,
             Type::Timer,
-            "Registered timer task count: {}",
+            "已注册的定时任务数量: {}",
             timer_map.len()
         );
 
@@ -81,7 +81,7 @@ impl Timer {
             logging!(
                 info,
                 Type::Timer,
-                "Registered timer task - uid={}, interval={}min, task_id={}",
+                "注册了定时任务 - uid={}, interval={}min, task_id={}",
                 uid,
                 task.interval_minutes,
                 task.task_id
@@ -100,12 +100,7 @@ impl Timer {
                     let uid = item.uid.as_ref()?;
 
                     if interval > 0 && cur_timestamp - updated >= interval * 60 {
-                        logging!(
-                            info,
-                            Type::Timer,
-                            "Profile requires immediate update: uid={}",
-                            uid
-                        );
+                        logging!(info, Type::Timer, "需要立即更新的配置: uid={}", uid);
                         Some(uid.clone())
                     } else {
                         None
@@ -121,7 +116,7 @@ impl Timer {
             logging!(
                 info,
                 Type::Timer,
-                "Number of profiles requiring immediate update: {}",
+                "需要立即更新的配置数量: {}",
                 profiles_to_update.len()
             );
             let timer_map = self.timer_map.read();
@@ -129,7 +124,7 @@ impl Timer {
 
             for uid in profiles_to_update {
                 if let Some(task) = timer_map.get(&uid) {
-                    logging!(info, Type::Timer, "Executing task immediately: uid={}", uid);
+                    logging!(info, Type::Timer, "立即执行任务: uid={}", uid);
                     if let Err(e) = delay_timer.advance_task(task.task_id) {
                         logging!(warn, Type::Timer, "Failed to advance task {}: {}", uid, e);
                     }
@@ -242,7 +237,7 @@ impl Timer {
                             logging!(
                                 debug,
                                 Type::Timer,
-                                "Found scheduled update config: uid={}, interval={}min",
+                                "找到定时更新配置: uid={}, interval={}min",
                                 uid,
                                 interval
                             );
@@ -256,7 +251,7 @@ impl Timer {
         logging!(
             debug,
             Type::Timer,
-            "Generated scheduled update config count: {}",
+            "生成的定时更新配置数量: {}",
             new_map.len()
         );
         new_map
@@ -272,7 +267,7 @@ impl Timer {
         logging!(
             debug,
             Type::Timer,
-            "Current timer_map size: {}",
+            "当前 timer_map 大小: {}",
             timer_map.len()
         );
 
@@ -284,7 +279,7 @@ impl Timer {
                     logging!(
                         debug,
                         Type::Timer,
-                        "Timer task interval changed: uid={}, old={}, new={}",
+                        "定时任务间隔变更: uid={}, 旧={}, 新={}",
                         uid,
                         task.interval_minutes,
                         interval
@@ -293,12 +288,12 @@ impl Timer {
                 }
                 None => {
                     // Task no longer needed
-                    logging!(debug, Type::Timer, "Timer task removed: uid={}", uid);
+                    logging!(debug, Type::Timer, "定时任务已删除: uid={}", uid);
                     diff_map.insert(uid.clone(), DiffFlag::Del(task.task_id));
                 }
                 _ => {
                     // Task exists with same interval, no change needed
-                    logging!(debug, Type::Timer, "Timer task unchanged: uid={}", uid);
+                    logging!(debug, Type::Timer, "定时任务保持不变: uid={}", uid);
                 }
             }
         }
@@ -311,7 +306,7 @@ impl Timer {
                 logging!(
                     debug,
                     Type::Timer,
-                    "Added timer task: uid={}, interval={}min",
+                    "新增定时任务: uid={}, interval={}min",
                     uid,
                     interval
                 );
@@ -326,12 +321,6 @@ impl Timer {
         }
 
         logging!(debug, Type::Timer, "定时任务变更数量: {}", diff_map.len());
-        logging!(
-            debug,
-            Type::Timer,
-            "Number of timer task changes: {}",
-            diff_map.len()
-        );
         diff_map
     }
 
@@ -374,18 +363,13 @@ impl Timer {
 
     /// Get next update time for a profile
     pub fn get_next_update_time(&self, uid: &str) -> Option<i64> {
-        logging!(info, Type::Timer, "Getting next update time, uid={}", uid);
+        logging!(info, Type::Timer, "获取下次更新时间，uid={}", uid);
 
         let timer_map = self.timer_map.read();
         let task = match timer_map.get(uid) {
             Some(t) => t,
             None => {
-                logging!(
-                    warn,
-                    Type::Timer,
-                    "Corresponding timer task not found, uid={}",
-                    uid
-                );
+                logging!(warn, Type::Timer, "找不到对应的定时任务，uid={}", uid);
                 return None;
             }
         };
@@ -396,7 +380,7 @@ impl Timer {
         let items = match profiles.get_items() {
             Some(i) => i,
             None => {
-                logging!(warn, Type::Timer, "Failed to get profile list");
+                logging!(warn, Type::Timer, "获取配置列表失败");
                 return None;
             }
         };
@@ -404,12 +388,7 @@ impl Timer {
         let profile = match items.iter().find(|item| item.uid.as_deref() == Some(uid)) {
             Some(p) => p,
             None => {
-                logging!(
-                    warn,
-                    Type::Timer,
-                    "Corresponding profile not found, uid={}",
-                    uid
-                );
+                logging!(warn, Type::Timer, "找不到对应的配置，uid={}", uid);
                 return None;
             }
         };
@@ -422,7 +401,7 @@ impl Timer {
             logging!(
                 info,
                 Type::Timer,
-                "Calculated next update time: {}, uid={}",
+                "计算得到下次更新时间: {}, uid={}",
                 next_time,
                 uid
             );
@@ -431,7 +410,7 @@ impl Timer {
             logging!(
                 warn,
                 Type::Timer,
-                "Invalid update time or interval, updated={}, interval={}",
+                "更新时间或间隔无效，updated={}, interval={}",
                 updated,
                 task.interval_minutes
             );
@@ -463,7 +442,7 @@ impl Timer {
             logging!(
                 info,
                 Type::Timer,
-                "Is profile {} currently active: {}",
+                "配置 {} 是否为当前激活配置: {}",
                 uid,
                 is_current
             );

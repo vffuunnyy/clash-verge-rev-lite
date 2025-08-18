@@ -202,9 +202,7 @@ pub async fn enhance() -> (Mapping, Vec<String>, HashMap<String, ResultLog>) {
             });
             let patch_tun = value.as_mapping().cloned().unwrap_or(Mapping::new());
             for (key, value) in patch_tun.into_iter() {
-                if !tun.contains_key(&key) {
-                    tun.insert(key, value);
-                }
+                tun.insert(key, value);
             }
             config.insert("tun".into(), tun.into());
         } else {
@@ -241,7 +239,7 @@ pub async fn enhance() -> (Mapping, Vec<String>, HashMap<String, ResultLog>) {
             .filter(|(s, _)| s.is_support(clash_core.as_ref()))
             .map(|(_, c)| c)
             .for_each(|item| {
-                log::debug!(target: "app", "run builtin script {0}", item.uid);
+                log::debug!(target: "app", "run builtin script {}", item.uid);
                 if let ChainType::Script(script) = item.data {
                     match use_script(script, config.to_owned(), "".to_string()) {
                         Ok((res_config, _)) => {

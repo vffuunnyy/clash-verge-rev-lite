@@ -36,7 +36,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import getSystem from "@/utils/get-system";
-import { Loader2 } from "lucide-react";
 
 const OS = getSystem();
 
@@ -70,9 +69,6 @@ export const LayoutViewer = forwardRef<DialogRef>((props, ref) => {
   const { t } = useTranslation();
   const { verge, patchVerge, mutateVerge } = useVerge();
 
-  const [localConfig, setLocalConfig] = useState<Partial<IVergeConfig>>({});
-  const [loading, setLoading] = useState(false);
-
   const [open, setOpen] = useState(false);
   const [commonIcon, setCommonIcon] = useState("");
   const [sysproxyIcon, setSysproxyIcon] = useState("");
@@ -100,26 +96,28 @@ export const LayoutViewer = forwardRef<DialogRef>((props, ref) => {
   }, []);
 
   useEffect(() => {
-    if (open) {
-      setLocalConfig(verge ?? {});
-      initIconPath();
-    }
-  }, [open, verge, initIconPath]);
+    if (open) initIconPath();
+  }, [open, initIconPath]);
 
   useImperativeHandle(ref, () => ({
     open: () => setOpen(true),
     close: () => setOpen(false),
   }));
 
-  const handleConfigChange = (patch: Partial<IVergeConfig>) => {
-    setLocalConfig((prev) => ({ ...prev, ...patch }));
+  const onSwitchFormat = (_e: any, value: boolean) => value;
+  const onError = (err: any) => {
+    showNotice("error", err.message || err.toString());
+  };
+  const onChangeData = (patch: Partial<IVergeConfig>) => {
+    mutateVerge({ ...verge, ...patch }, false);
   };
 
   const handleIconChange = useLockFn(
     async (type: "common" | "sysproxy" | "tun") => {
       const key = `${type}_tray_icon` as keyof IVergeConfig;
-      if (localConfig[key]) {
-        handleConfigChange({ [key]: false });
+      if (verge?.[key]) {
+        onChangeData({ [key]: false });
+        await patchVerge({ [key]: false });
       } else {
         const selected = await openDialog({
           directory: false,
@@ -130,24 +128,12 @@ export const LayoutViewer = forwardRef<DialogRef>((props, ref) => {
           const path = Array.isArray(selected) ? selected[0] : selected;
           await copyIconFile(path, type);
           await initIconPath();
-          handleConfigChange({ [key]: true });
+          onChangeData({ [key]: true });
+          await patchVerge({ [key]: true });
         }
       }
     },
   );
-
-  const handleSave = useLockFn(async () => {
-    setLoading(true);
-    try {
-      await patchVerge(localConfig);
-      showNotice("success", t("Settings saved successfully"));
-      setOpen(false);
-    } catch (err: any) {
-      showNotice("error", err.message || err.toString());
-    } finally {
-      setLoading(false);
-    }
-  });
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -157,34 +143,131 @@ export const LayoutViewer = forwardRef<DialogRef>((props, ref) => {
         </DialogHeader>
 
         <div className="py-4 space-y-1">
+          <SettingRow label={t("Traffic Graph")}>
+            <GuardState
+              value={verge?.traffic_graph ?? true}
+              valueProps="checked"
+              onCatch={onError}
+              onFormat={onSwitchFormat}
+              onChange={(e) => onChangeData({ traffic_graph: e })}
+              onGuard={(e) => patchVerge({ traffic_graph: e })}
+            >
+              <Switch />
+            </GuardState>
+          </SettingRow>
+
+          <SettingRow label={t("Memory Usage")}>
+            <GuardState
+              value={verge?.enable_memory_usage ?? true}
+              valueProps="checked"
+              onCatch={onError}
+              onFormat={onSwitchFormat}
+              onChange={(e) => onChangeData({ enable_memory_usage: e })}
+              onGuard={(e) => patchVerge({ enable_memory_usage: e })}
+            >
+              <Switch />
+            </GuardState>
+          </SettingRow>
+
+          <SettingRow label={t("Proxy Group Icon")}>
+            <GuardState
+              value={verge?.enable_group_icon ?? true}
+              valueProps="checked"
+              onCatch={onError}
+              onFormat={onSwitchFormat}
+              onChange={(e) => onChangeData({ enable_group_icon: e })}
+              onGuard={(e) => patchVerge({ enable_group_icon: e })}
+            >
+              <Switch />
+            </GuardState>
+          </SettingRow>
+
+          <SettingRow
+            label={t("Hover Jump Navigator")}
+            extra={<TooltipIcon tooltip={t("Hover Jump Navigator Info")} />}
+          >
+            <GuardState
+              value={verge?.enable_hover_jump_navigator ?? true}
+              valueProps="checked"
+              onCatch={onError}
+              onFormat={onSwitchFormat}
+              onChange={(e) => onChangeData({ enable_hover_jump_navigator: e })}
+              onGuard={(e) => patchVerge({ enable_hover_jump_navigator: e })}
+            >
+              <Switch />
+            </GuardState>
+          </SettingRow>
+
+          <SettingRow label={t("Nav Icon")}>
+            <GuardState
+              value={verge?.menu_icon ?? "monochrome"}
+              onCatch={onError}
+              onFormat={(v) => v}
+              onChange={(e) => onChangeData({ menu_icon: e })}
+              onGuard={(e) => patchVerge({ menu_icon: e })}
+            >
+              {/* --- НАЧАЛО ИЗМЕНЕНИЙ 1 --- */}
+              <Select
+                onValueChange={(value) =>
+                  onChangeData({ menu_icon: value as any })
+                }
+                value={verge?.menu_icon}
+              >
+                {/* --- КОНЕЦ ИЗМЕНЕНИЙ 1 --- */}
+                <SelectTrigger className="w-40 h-8">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="monochrome">{t("Monochrome")}</SelectItem>
+                  <SelectItem value="colorful">{t("Colorful")}</SelectItem>
+                  <SelectItem value="disable">{t("Disable")}</SelectItem>
+                </SelectContent>
+              </Select>
+            </GuardState>
+          </SettingRow>
+
           {OS === "macos" && (
             <>
               <SettingRow label={t("Tray Icon")}>
-                <Select
-                  onValueChange={(value) =>
-                    handleConfigChange({ tray_icon: value as any })
-                  }
-                  value={localConfig.tray_icon ?? "monochrome"}
+                <GuardState
+                  value={verge?.tray_icon ?? "monochrome"}
+                  onCatch={onError}
+                  onFormat={(v) => v}
+                  onChange={(e) => onChangeData({ tray_icon: e })}
+                  onGuard={(e) => patchVerge({ tray_icon: e })}
                 >
-                  <SelectTrigger className="w-40 h-8">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="monochrome">
-                      {t("Monochrome")}
-                    </SelectItem>
-                    <SelectItem value="colorful">{t("Colorful")}</SelectItem>
-                  </SelectContent>
-                </Select>
+                  {/* --- НАЧАЛО ИЗМЕНЕНИЙ 2 --- */}
+                  <Select
+                    onValueChange={(value) =>
+                      onChangeData({ tray_icon: value as any })
+                    }
+                    value={verge?.tray_icon}
+                  >
+                    {/* --- КОНЕЦ ИЗМЕНЕНИЙ 2 --- */}
+                    <SelectTrigger className="w-40 h-8">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="monochrome">
+                        {t("Monochrome")}
+                      </SelectItem>
+                      <SelectItem value="colorful">{t("Colorful")}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </GuardState>
               </SettingRow>
 
               <SettingRow label={t("Enable Tray Icon")}>
-                <Switch
-                  checked={localConfig.enable_tray_icon ?? true}
-                  onCheckedChange={(checked) =>
-                    handleConfigChange({ enable_tray_icon: checked })
-                  }
-                />
+                <GuardState
+                  value={verge?.enable_tray_icon ?? true}
+                  valueProps="checked"
+                  onCatch={onError}
+                  onFormat={onSwitchFormat}
+                  onChange={(e) => onChangeData({ enable_tray_icon: e })}
+                  onGuard={(e) => patchVerge({ enable_tray_icon: e })}
+                >
+                  <Switch />
+                </GuardState>
               </SettingRow>
             </>
           )}
@@ -196,14 +279,14 @@ export const LayoutViewer = forwardRef<DialogRef>((props, ref) => {
               className="h-8"
               onClick={() => handleIconChange("common")}
             >
-              {localConfig.common_tray_icon && commonIcon && (
+              {verge?.common_tray_icon && commonIcon && (
                 <img
                   src={convertFileSrc(commonIcon)}
                   className="h-5 mr-2"
                   alt="common tray icon"
                 />
               )}
-              {localConfig.common_tray_icon ? t("Clear") : t("Browse")}
+              {verge?.common_tray_icon ? t("Clear") : t("Browse")}
             </Button>
           </SettingRow>
 
@@ -214,14 +297,14 @@ export const LayoutViewer = forwardRef<DialogRef>((props, ref) => {
               className="h-8"
               onClick={() => handleIconChange("sysproxy")}
             >
-              {localConfig.sysproxy_tray_icon && sysproxyIcon && (
+              {verge?.sysproxy_tray_icon && sysproxyIcon && (
                 <img
                   src={convertFileSrc(sysproxyIcon)}
                   className="h-5 mr-2"
                   alt="system proxy tray icon"
                 />
               )}
-              {localConfig.sysproxy_tray_icon ? t("Clear") : t("Browse")}
+              {verge?.sysproxy_tray_icon ? t("Clear") : t("Browse")}
             </Button>
           </SettingRow>
 
@@ -232,14 +315,14 @@ export const LayoutViewer = forwardRef<DialogRef>((props, ref) => {
               className="h-8"
               onClick={() => handleIconChange("tun")}
             >
-              {localConfig.tun_tray_icon && tunIcon && (
+              {verge?.tun_tray_icon && tunIcon && (
                 <img
                   src={convertFileSrc(tunIcon)}
                   className="h-5 mr-2"
                   alt="tun mode tray icon"
                 />
               )}
-              {localConfig.tun_tray_icon ? t("Clear") : t("Browse")}
+              {verge?.tun_tray_icon ? t("Clear") : t("Browse")}
             </Button>
           </SettingRow>
         </div>
@@ -247,13 +330,9 @@ export const LayoutViewer = forwardRef<DialogRef>((props, ref) => {
         <DialogFooter>
           <DialogClose asChild>
             <Button type="button" variant="outline">
-              {t("Cancel")}
+              {t("Close")}
             </Button>
           </DialogClose>
-          <Button type="button" onClick={handleSave} disabled={loading}>
-            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {t("Save")}
-          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

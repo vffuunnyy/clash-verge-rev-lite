@@ -40,91 +40,9 @@ jobs:
           fi
           echo "Tag and package.json version are consistent."
 
-  create_release_notes:
-    name: Create Release Notes
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Fetch UPDATE logs
-        id: fetch_update_logs
-        run: |
-          if [ -f "UPDATELOG.md" ]; then
-            UPDATE_LOGS=$(awk '/^## v/{if(flag) exit; flag=1} flag' UPDATELOG.md)
-            if [ -n "$UPDATE_LOGS" ]; then
-              echo "Found update logs"
-              echo "UPDATE_LOGS<<EOF" >> $GITHUB_ENV
-              echo "$UPDATE_LOGS" >> $GITHUB_ENV
-              echo "EOF" >> $GITHUB_ENV
-            else
-              echo "No update sections found in UPDATELOG.md"
-            fi
-          else
-            echo "UPDATELOG.md file not found"
-          fi
-        shell: bash
-
-      - name: Get Version
-        run: |
-          sudo apt-get update
-          sudo apt-get install jq
-          echo "VERSION=$(cat package.json | jq '.version' | tr -d '"')" >> $GITHUB_ENV
-          echo "BUILDTIME=$(TZ=Europe/Moscow date)" >> $GITHUB_ENV
-
-      - run: |
-          if [ -z "$UPDATE_LOGS" ]; then
-            echo "No update logs found, using default message"
-            UPDATE_LOGS="More new features are now supported. Check for detailed changelog soon."
-          else
-            echo "Using found update logs"
-          fi
-
-          cat > release.txt << EOF
-          $UPDATE_LOGS
-
-          ## Which version should I download?
-
-          ### macOS
-          <a href="https://github.com/coolcoala/clash-verge-rev-lite/releases/download/v${{ env.VERSION }}/Koala.Clash_aarch64.dmg"><img src="https://img.shields.io/badge/DMG-default?style=flat&logo=apple&label=Apple%20Silicon"></a><br>
-          <a href="https://github.com/coolcoala/clash-verge-rev-lite/releases/download/v${{ env.VERSION }}/Koala.Clash_x64.dmg"><img src="https://img.shields.io/badge/DMG-default?style=flat&logo=apple&label=Intel"></a><br>
-          > :warning: **Warning**
-          If you get a notification that the application is corrupted when you run it on macOS, run this command:<br>
-          <code>sudo xattr -r -c /Applications/Koala\ Clash.app</code>
-
-          ### Linux
-          <a href="https://github.com/coolcoala/clash-verge-rev-lite/releases/download/v${{ env.VERSION }}/Koala.Clash_amd64.deb"><img src="https://img.shields.io/badge/x64-default?style=flat&logo=debian&label=DEB"> </a><br>
-          <a href="https://github.com/coolcoala/clash-verge-rev-lite/releases/download/v${{ env.VERSION }}/Koala.Clash.x86_64.rpm"><img src="https://img.shields.io/badge/x64-default?style=flat&logo=fedora&label=RPM"> </a>
-
-          <a href="https://github.com/coolcoala/clash-verge-rev-lite/releases/download/v${{ env.VERSION }}/Koala.Clash_arm64.deb"><img src="https://img.shields.io/badge/arm64-default?style=flat&logo=debian&label=DEB"> </a><br>
-          <a href="https://github.com/coolcoala/clash-verge-rev-lite/releases/download/v${{ env.VERSION }}/Koala.Clash.aarch64.rpm"><img src="https://img.shields.io/badge/aarch64-default?style=flat&logo=fedora&label=RPM"> </a>
-
-          <a href="https://github.com/coolcoala/clash-verge-rev-lite/releases/download/v${{ env.VERSION }}/Koala.Clash_armhf.deb"><img src="https://img.shields.io/badge/armhf-default?style=flat&logo=debian&label=DEB"> </a><br>
-          <a href="https://github.com/coolcoala/clash-verge-rev-lite/releases/download/v${{ env.VERSION }}/Koala.Clash.armhfp.rpm"><img src="https://img.shields.io/badge/armhfp-default?style=flat&logo=fedora&label=RPM"> </a>
-
-          ### Windows (Win7 is no longer supported)
-          #### Normal version (recommended)
-          <a href="https://github.com/coolcoala/clash-verge-rev-lite/releases/download/v${{ env.VERSION }}/Koala.Clash_x64-setup.exe"><img src="https://badgen.net/badge/icon/x64?icon=windows&label=exe"></a><br>
-          <a href="https://github.com/coolcoala/clash-verge-rev-lite/releases/download/v${{ env.VERSION }}/Koala.Clash_arm64-setup.exe"><img src="https://badgen.net/badge/icon/arm64?icon=windows&label=exe"></a>
-          #### Portable version is no longer available with many problems
-          #### Built-in Webview version 2 (large size, only used in enterprise version of the system or can not install webview2)
-          <a href="https://github.com/coolcoala/clash-verge-rev-lite/releases/download/v${{ env.VERSION }}/Koala.Clash_x64_fixed_webview2-setup.exe"><img src="https://badgen.net/badge/icon/x64?icon=windows&label=exe"></a><br>
-          <a href="https://github.com/coolcoala/clash-verge-rev-lite/releases/download/v${{ env.VERSION }}/Koala.Clash_arm64_fixed_webview2-setup.exe"><img src="https://badgen.net/badge/icon/arm64?icon=windows&label=exe"></a>
-
-          Created at ${{ env.BUILDTIME }}.
-          EOF
-
-      - name: Upload Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: v${{env.VERSION}}
-          name: "Koala Clash v${{env.VERSION}}"
-          body_path: release.txt
-          token: ${{ secrets.GITHUB_TOKEN }}
-
   release:
     name: Release Build
-    needs: [check_tag_version, create_release_notes]
+    needs: check_tag_version
     strategy:
       fail-fast: false
       matrix:
@@ -178,77 +96,19 @@ jobs:
           pnpm i
           pnpm run prebuild ${{ matrix.target }}
 
-      - name: Create .p8 file
-        run: |
-          mkdir -p ~/.appstoreconnect/private_keys
-          echo "${{ secrets.APPLE_API_KEY_CONTENT }}" > ~/.appstoreconnect/private_keys/AuthKey_${{ secrets.APPLE_API_KEY }}.p8
-
       - name: Tauri build
-        id: build
         uses: tauri-apps/tauri-action@v0
         env:
           NODE_OPTIONS: "--max_old_space_size=4096"
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
-          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
-          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
-          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
-          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
-          APPLE_API_KEY_PATH: "~/.appstoreconnect/private_keys/AuthKey_${{ secrets.APPLE_API_KEY }}.p8"
         with:
+          tagName: v__VERSION__
+          releaseName: "Clash Verge Rev Lite v__VERSION__"
+          releaseBody: "More new features are now supported."
           tauriScript: pnpm
           args: --target ${{ matrix.target }}
-
-      - name: Rename Artifact (Windows)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          $version = ${{steps.build.outputs.appVersion}}
-          $files = Get-ChildItem ".\src-tauri\target\${{ matrix.target }}\release\bundle\nsis\*-setup.exe"
-          foreach ($file in $files) {
-            $newName = $file.Name -replace "_${version}_", "_" 
-            Rename-Item $file.FullName $newName
-          }
-
-      - name: Rename Artifact (Linux/macOS)
-        if: runner.os == 'Linux' || runner.os == 'macOS'
-        shell: bash
-        run: |
-          TARGET_DIR="src-tauri/target/${{ matrix.target }}/release/bundle"
-
-          if [ ! -d "$TARGET_DIR" ]; then
-              exit 1
-          fi
-
-          find "$TARGET_DIR" -type f \( -name "*.dmg" -o -name "*.deb" -o -name "*.rpm" \) -print0 | while IFS= read -r -d '' old_path; do
-              dir_path=$(dirname "$old_path")
-              old_filename=$(basename "$old_path")
-              new_filename=$(echo "$old_filename" \
-                  | sed -E 's/_[0-9]+\.[0-9]+\.[0-9]+_/_/' \
-                  | sed -E 's/-[0-9]+\.[0-9]+\.[0-9]+-[0-9]+//' \
-              )
-              new_path="${dir_path}/${new_filename}"
-              if [ "$old_path" != "$new_path" ]; then
-                  echo "   - '$old_filename' -> '$new_filename'"
-                  mv "$old_path" "$new_path"
-              fi
-          done
-
-      - name: Upload Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: v${{steps.build.outputs.appVersion}}
-          name: "Koala Clash v${{steps.build.outputs.appVersion}}"
-          token: ${{ secrets.GITHUB_TOKEN }}
-          files: |
-            src-tauri/target/${{ matrix.target }}/release/bundle/deb/*.deb
-            src-tauri/target/${{ matrix.target }}/release/bundle/rpm/*.rpm
-            src-tauri/target/${{ matrix.target }}/release/bundle/nsis/*setup*
-            src-tauri/target/${{ matrix.target }}/release/bundle/dmg/*.dmg
-            src-tauri/target/${{ matrix.target }}/release/bundle/macos/*.tar.gz
-            src-tauri/target/${{ matrix.target }}/release/bundle/macos/*.tar.gz.sig
 
   release-for-linux-arm:
     name: Release Build for Linux ARM
@@ -359,36 +219,14 @@ jobs:
           sudo apt-get update
           sudo apt-get install jq
           echo "VERSION=$(cat package.json | jq '.version' | tr -d '"')" >> $GITHUB_ENV
-          echo "BUILDTIME=$(TZ=Europe/Moscow date)" >> $GITHUB_ENV
-
-      - name: Rename
-        shell: bash
-        run: |
-          TARGET_DIR="src-tauri/target/${{ matrix.target }}/release/bundle"
-
-          if [ ! -d "$TARGET_DIR" ]; then
-              exit 1
-          fi
-
-          find "$TARGET_DIR" -type f \( -name "*.dmg" -o -name "*.deb" -o -name "*.rpm" \) -print0 | while IFS= read -r -d '' old_path; do
-              dir_path=$(dirname "$old_path")
-              old_filename=$(basename "$old_path")
-              new_filename=$(echo "$old_filename" \
-                  | sed -E 's/_[0-9]+\.[0-9]+\.[0-9]+_/_/' \
-                  | sed -E 's/-[0-9]+\.[0-9]+\.[0-9]+-[0-9]+//' \
-              )
-              new_path="${dir_path}/${new_filename}"
-              if [ "$old_path" != "$new_path" ]; then
-                  echo "   - '$old_filename' -> '$new_filename'"
-                  mv "$old_path" "$new_path"
-              fi
-          done
+          echo "BUILDTIME=$(TZ=Asia/Shanghai date)" >> $GITHUB_ENV
 
       - name: Upload Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{env.VERSION}}
-          name: "Koala Clash v${{env.VERSION}}"
+          name: "Clash Verge Rev Lite v${{env.VERSION}}"
+          body: "More new features are now supported."
           token: ${{ secrets.GITHUB_TOKEN }}
           files: |
             src-tauri/target/${{ matrix.target }}/release/bundle/deb/*.deb
@@ -437,8 +275,8 @@ jobs:
 
       - name: Download WebView2 Runtime
         run: |
-          invoke-webrequest -uri https://github.com/westinyang/WebView2RuntimeArchive/releases/download/133.0.3065.92/Microsoft.WebView2.FixedVersionRuntime.133.0.3065.92.${{ matrix.arch }}.cab -outfile Microsoft.WebView2.FixedVersionRuntime.133.0.3065.92.${{ matrix.arch }}.cab
-          Expand .\Microsoft.WebView2.FixedVersionRuntime.133.0.3065.92.${{ matrix.arch }}.cab -F:* ./src-tauri
+          invoke-webrequest -uri https://github.com/westinyang/WebView2RuntimeArchive/releases/download/109.0.1518.78/Microsoft.WebView2.FixedVersionRuntime.109.0.1518.78.${{ matrix.arch }}.cab -outfile Microsoft.WebView2.FixedVersionRuntime.109.0.1518.78.${{ matrix.arch }}.cab
+          Expand .\Microsoft.WebView2.FixedVersionRuntime.109.0.1518.78.${{ matrix.arch }}.cab -F:* ./src-tauri
           Remove-Item .\src-tauri\tauri.windows.conf.json
           Rename-Item .\src-tauri\webview2.${{ matrix.arch }}.json tauri.windows.conf.json
 
@@ -458,19 +296,19 @@ jobs:
         run: |
           $files = Get-ChildItem ".\src-tauri\target\${{ matrix.target }}\release\bundle\nsis\*-setup.exe"
           foreach ($file in $files) {
-            $newName = $file.Name -replace "_${{steps.build.outputs.appVersion}}_", "_" -replace "-setup\.exe$", "_fixed_webview2-setup.exe"
+            $newName = $file.Name -replace "-setup\.exe$", "_fixed_webview2-setup.exe"
             Rename-Item $file.FullName $newName
           }
 
           $files = Get-ChildItem ".\src-tauri\target\${{ matrix.target }}\release\bundle\nsis\*.nsis.zip"
           foreach ($file in $files) {
-            $newName = $file.Name -replace "_${{steps.build.outputs.appVersion}}_", "_" -replace "-setup\.nsis\.zip$", "_fixed_webview2-setup.nsis.zip"
+            $newName = $file.Name -replace "-setup\.nsis\.zip$", "_fixed_webview2-setup.nsis.zip"
             Rename-Item $file.FullName $newName
           }
 
           $files = Get-ChildItem ".\src-tauri\target\${{ matrix.target }}\release\bundle\nsis\*-setup.exe.sig"
           foreach ($file in $files) {
-            $newName = $file.Name -replace "_${{steps.build.outputs.appVersion}}_", "_" -replace "-setup\.exe\.sig$", "_fixed_webview2-setup.exe.sig"
+            $newName = $file.Name -replace "-setup\.exe\.sig$", "_fixed_webview2-setup.exe.sig"
             Rename-Item $file.FullName $newName
           }
 
@@ -478,7 +316,8 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{steps.build.outputs.appVersion}}
-          name: "Koala Clash v${{steps.build.outputs.appVersion}}"
+          name: "Clash Verge Rev Lite v${{steps.build.outputs.appVersion}}"
+          body: "More new features are now supported."
           token: ${{ secrets.GITHUB_TOKEN }}
           files: src-tauri/target/${{ matrix.target }}/release/bundle/nsis/*setup*
 
@@ -537,69 +376,3 @@ jobs:
         run: pnpm updater-fixed-webview2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  push-notify-to-telegram:
-    runs-on: ubuntu-latest
-    needs: [release-update, release-update-for-fixed-webview2]
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Fetch UPDATE logs
-        id: fetch_update_logs
-        run: |
-          if [ -f "UPDATELOG.md" ]; then
-            UPDATE_LOGS=$(awk '/^## v/{if(flag) exit; flag=1} flag' UPDATELOG.md)
-            if [ -n "$UPDATE_LOGS" ]; then
-              echo "Found update logs"
-              echo "UPDATE_LOGS<<EOF" >> $GITHUB_ENV
-              echo "$UPDATE_LOGS" >> $GITHUB_ENV
-              echo "EOF" >> $GITHUB_ENV
-            else
-              echo "No update sections found in UPDATELOG.md"
-            fi
-          else
-            echo "UPDATELOG.md file not found"
-          fi
-        shell: bash
-
-      - name: Get Version
-        run: |
-          sudo apt-get update
-          sudo apt-get install jq
-          echo "VERSION=$(cat package.json | jq '.version' | tr -d '"')" >> $GITHUB_ENV
-          echo "BUILDTIME=$(TZ=Europe/Moscow date)" >> $GITHUB_ENV
-
-      - run: |
-          if [ -z "$UPDATE_LOGS" ]; then
-            echo "No update logs found, using default message"
-            UPDATE_LOGS="More new features are now supported. Check for detailed changelog soon."
-          else
-            echo "Using found update logs"
-            UPDATE_LOGS=$(echo "$UPDATE_LOGS" | sed 's/^## \(v.*\)/\*\1\*/')
-          fi
-
-          cat > release.txt << EOF
-          Вышло обновление!
-
-          $UPDATE_LOGS
-
-          [Ссылка на релиз](https://github.com/coolcoala/clash-verge-rev-lite/releases/latest)
-
-          EOF
-
-      - name: notify to channel
-        uses: appleboy/telegram-action@master
-        with:
-          to: ${{ secrets.TELEGRAM_TO_CHANNEL }}
-          token: ${{ secrets.TELEGRAM_TOKEN }}
-          message_file: release.txt
-          format: markdown
-
-      - name: notify to group
-        uses: appleboy/telegram-action@master
-        with:
-          to: ${{ secrets.TELEGRAM_TO_GROUP }}
-          token: ${{ secrets.TELEGRAM_TOKEN }}
-          message_file: release.txt
-          format: markdown

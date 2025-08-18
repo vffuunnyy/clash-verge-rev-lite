@@ -53,7 +53,7 @@ fn get_window_operation_debounce() -> &'static Mutex<Instant> {
 
 fn should_handle_window_operation() -> bool {
     if WINDOW_OPERATION_IN_PROGRESS.load(Ordering::Acquire) {
-        log::warn!(target: "app", "[debounce] Window operation already in progress, skipping duplicate call");
+        log::warn!(target: "app", "[防抖] 窗口操作已在进行中，跳过重复调用");
         return false;
     }
 
@@ -62,16 +62,16 @@ fn should_handle_window_operation() -> bool {
     let now = Instant::now();
     let elapsed = now.duration_since(*last_operation);
 
-    log::debug!(target: "app", "[debounce] Checking window operation interval: {}ms (need >={}ms)", 
+    log::debug!(target: "app", "[防抖] 检查窗口操作间隔: {}ms (需要>={}ms)", 
               elapsed.as_millis(), WINDOW_OPERATION_DEBOUNCE_MS);
 
     if elapsed >= Duration::from_millis(WINDOW_OPERATION_DEBOUNCE_MS) {
         *last_operation = now;
         WINDOW_OPERATION_IN_PROGRESS.store(true, Ordering::Release);
-        log::info!(target: "app", "[debounce] Window operation allowed to execute");
+        log::info!(target: "app", "[防抖] 窗口操作被允许执行");
         true
     } else {
-        log::warn!(target: "app", "[debounce] Window operation ignored by debounce: {}ms since last < {}ms", 
+        log::warn!(target: "app", "[防抖] 窗口操作被防抖机制忽略，距离上次操作 {}ms < {}ms", 
                   elapsed.as_millis(), WINDOW_OPERATION_DEBOUNCE_MS);
         false
     }

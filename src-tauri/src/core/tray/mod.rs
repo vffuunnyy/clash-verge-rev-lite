@@ -3,6 +3,7 @@ use tauri::tray::TrayIconBuilder;
 #[cfg(target_os = "macos")]
 pub mod speed_rate;
 use crate::{
+    cmd,
     config::Config,
     feat, logging,
     module::{lightweight::is_in_lightweight_mode, mihomo::Rate},
@@ -45,7 +46,7 @@ fn should_handle_tray_click() -> bool {
         *last_click = now;
         true
     } else {
-        log::debug!(target: "app", "Tray click ignored by debounce; time since last click: {:?}ms", 
+        log::debug!(target: "app", "托盘点击被防抖机制忽略，距离上次点击 {:?}ms", 
                   now.duration_since(*last_click).as_millis());
         false
     }
@@ -230,7 +231,7 @@ impl Tray {
         let app_handle = match handle::Handle::global().app_handle() {
             Some(handle) => handle,
             None => {
-                log::warn!(target: "app", "Failed to update tray menu: app_handle not found");
+                log::warn!(target: "app", "更新托盘菜单失败: app_handle不存在");
                 return Ok(());
             }
         };
@@ -278,11 +279,11 @@ impl Tray {
                     profile_uid_and_name,
                     is_lightweight_mode,
                 )?));
-                log::debug!(target: "app", "Tray menu updated successfully");
+                log::debug!(target: "app", "托盘菜单更新成功");
                 Ok(())
             }
             None => {
-                log::warn!(target: "app", "Failed to update tray menu: tray not found");
+                log::warn!(target: "app", "更新托盘菜单失败: 托盘不存在");
                 Ok(())
             }
         }
@@ -294,7 +295,7 @@ impl Tray {
         let app_handle = match handle::Handle::global().app_handle() {
             Some(handle) => handle,
             None => {
-                log::warn!(target: "app", "Failed to update tray icon: app_handle not found");
+                log::warn!(target: "app", "更新托盘图标失败: app_handle不存在");
                 return Ok(());
             }
         };
@@ -302,7 +303,7 @@ impl Tray {
         let tray = match app_handle.tray_by_id("main") {
             Some(tray) => tray,
             None => {
-                log::warn!(target: "app", "Failed to update tray icon: tray not found");
+                log::warn!(target: "app", "更新托盘图标失败: 托盘不存在");
                 return Ok(());
             }
         };
@@ -331,7 +332,7 @@ impl Tray {
         let app_handle = match handle::Handle::global().app_handle() {
             Some(handle) => handle,
             None => {
-                log::warn!(target: "app", "Failed to update tray icon: app_handle not found");
+                log::warn!(target: "app", "更新托盘图标失败: app_handle不存在");
                 return Ok(());
             }
         };
@@ -339,7 +340,7 @@ impl Tray {
         let tray = match app_handle.tray_by_id("main") {
             Some(tray) => tray,
             None => {
-                log::warn!(target: "app", "Failed to update tray icon: tray not found");
+                log::warn!(target: "app", "更新托盘图标失败: 托盘不存在");
                 return Ok(());
             }
         };
@@ -375,7 +376,7 @@ impl Tray {
         let app_handle = match handle::Handle::global().app_handle() {
             Some(handle) => handle,
             None => {
-                log::warn!(target: "app", "Failed to update tray tooltip: app_handle not found");
+                log::warn!(target: "app", "更新托盘提示失败: app_handle不存在");
                 return Ok(());
             }
         };
@@ -383,7 +384,7 @@ impl Tray {
         let version = match VERSION.get() {
             Some(v) => v,
             None => {
-                log::warn!(target: "app", "Failed to update tray tooltip: version info not found");
+                log::warn!(target: "app", "更新托盘提示失败: 版本信息不存在");
                 return Ok(());
             }
         };
@@ -413,7 +414,7 @@ impl Tray {
 
         if let Some(tray) = app_handle.tray_by_id("main") {
             let _ = tray.set_tooltip(Some(&format!(
-                "Koala Clash {version}\n{}: {}\n{}: {}\n{}: {}",
+                "Clash Verge {version}\n{}: {}\n{}: {}\n{}: {}",
                 t("SysProxy"),
                 switch_map[system_proxy],
                 t("TUN"),
@@ -422,7 +423,7 @@ impl Tray {
                 current_profile_name
             )));
         } else {
-            log::warn!(target: "app", "Failed to update tray tooltip: tray not found");
+            log::warn!(target: "app", "更新托盘提示失败: 托盘不存在");
         }
 
         Ok(())
@@ -442,7 +443,7 @@ impl Tray {
     pub fn unsubscribe_traffic(&self) {}
 
     pub fn create_tray_from_handle(&self, app_handle: &AppHandle) -> Result<()> {
-        log::info!(target: "app", "Creating system tray from AppHandle");
+        log::info!(target: "app", "正在从AppHandle创建系统托盘");
 
         // 获取图标
         let icon_bytes = TrayState::get_common_tray_icon().1;
@@ -490,20 +491,20 @@ impl Tray {
                     "tun_mode" => feat::toggle_tun_mode(None),
                     "main_window" => {
                         use crate::utils::window_manager::WindowManager;
-                        log::info!(target: "app", "Tray click: show main window");
+                        log::info!(target: "app", "Tray点击事件: 显示主窗口");
                         if crate::module::lightweight::is_in_lightweight_mode() {
-                            log::info!(target: "app", "Currently in lightweight mode, exiting lightweight mode");
+                            log::info!(target: "app", "当前在轻量模式，正在退出轻量模式");
                             crate::module::lightweight::exit_lightweight_mode();
                         }
                         let result = WindowManager::show_main_window();
-                        log::info!(target: "app", "Window show result: {result:?}");
+                        log::info!(target: "app", "窗口显示结果: {result:?}");
                     }
                     _ => {}
                 }
             }
         });
         tray.on_menu_event(on_menu_event);
-        log::info!(target: "app", "System tray created successfully");
+        log::info!(target: "app", "系统托盘创建成功");
         Ok(())
     }
 
@@ -600,6 +601,16 @@ fn create_tray_menu(
     )
     .unwrap();
 
+    let direct_mode = &CheckMenuItem::with_id(
+        app_handle,
+        "direct_mode",
+        t("Direct Mode"),
+        true,
+        mode == "direct",
+        hotkeys.get("clash_mode_direct").map(|s| s.as_str()),
+    )
+    .unwrap();
+
     let profiles = &Submenu::with_id_and_items(
         app_handle,
         "profiles",
@@ -636,6 +647,45 @@ fn create_tray_menu(
         true,
         is_lightweight_mode,
         hotkeys.get("entry_lightweight_mode").map(|s| s.as_str()),
+    )
+    .unwrap();
+
+    let copy_env =
+        &MenuItem::with_id(app_handle, "copy_env", t("Copy Env"), true, None::<&str>).unwrap();
+
+    let open_app_dir = &MenuItem::with_id(
+        app_handle,
+        "open_app_dir",
+        t("Conf Dir"),
+        true,
+        None::<&str>,
+    )
+    .unwrap();
+
+    let open_core_dir = &MenuItem::with_id(
+        app_handle,
+        "open_core_dir",
+        t("Core Dir"),
+        true,
+        None::<&str>,
+    )
+    .unwrap();
+
+    let open_logs_dir = &MenuItem::with_id(
+        app_handle,
+        "open_logs_dir",
+        t("Logs Dir"),
+        true,
+        None::<&str>,
+    )
+    .unwrap();
+
+    let open_dir = &Submenu::with_id_and_items(
+        app_handle,
+        "open_dir",
+        t("Open Dir"),
+        true,
+        &[open_app_dir, open_core_dir, open_logs_dir],
     )
     .unwrap();
 
@@ -686,6 +736,7 @@ fn create_tray_menu(
             separator,
             rule_mode,
             global_mode,
+            direct_mode,
             separator,
             profiles,
             separator,
@@ -693,6 +744,8 @@ fn create_tray_menu(
             tun_mode,
             separator,
             lighteweight_mode,
+            copy_env,
+            open_dir,
             more,
             separator,
             quit,
@@ -717,24 +770,34 @@ fn on_menu_event(_: &AppHandle, event: MenuEvent) {
         }
         "open_window" => {
             use crate::utils::window_manager::WindowManager;
-            log::info!(target: "app", "Tray menu click: open window");
+            log::info!(target: "app", "托盘菜单点击: 打开窗口");
 
             if !should_handle_tray_click() {
                 return;
             }
 
             if crate::module::lightweight::is_in_lightweight_mode() {
-                log::info!(target: "app", "Currently in lightweight mode, exiting");
+                log::info!(target: "app", "当前在轻量模式，正在退出");
                 crate::module::lightweight::exit_lightweight_mode();
             }
             let result = WindowManager::show_main_window();
-            log::info!(target: "app", "Window show result: {result:?}");
+            log::info!(target: "app", "窗口显示结果: {result:?}");
         }
         "system_proxy" => {
             feat::toggle_system_proxy();
         }
         "tun_mode" => {
             feat::toggle_tun_mode(None);
+        }
+        "copy_env" => feat::copy_clash_env(),
+        "open_app_dir" => {
+            let _ = cmd::open_app_dir();
+        }
+        "open_core_dir" => {
+            let _ = cmd::open_core_dir();
+        }
+        "open_logs_dir" => {
+            let _ = cmd::open_logs_dir();
         }
         "restart_clash" => feat::restart_clash_core(),
         "restart_app" => feat::restart_app(),
@@ -753,7 +816,7 @@ fn on_menu_event(_: &AppHandle, event: MenuEvent) {
             if was_lightweight {
                 use crate::utils::window_manager::WindowManager;
                 let result = WindowManager::show_main_window();
-                log::info!(target: "app", "Show main window after exiting lightweight mode: {result:?}");
+                log::info!(target: "app", "退出轻量模式后显示主窗口: {result:?}");
             }
         }
         "quit" => {
@@ -767,6 +830,6 @@ fn on_menu_event(_: &AppHandle, event: MenuEvent) {
     }
 
     if let Err(e) = Tray::global().update_all_states() {
-        log::warn!(target: "app", "Failed to update tray state: {e}");
+        log::warn!(target: "app", "更新托盘状态失败: {e}");
     }
 }

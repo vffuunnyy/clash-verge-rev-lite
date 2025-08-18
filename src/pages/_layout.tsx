@@ -5,15 +5,23 @@ import { SWRConfig, mutate } from "swr";
 import { useEffect, useCallback, useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation, useRoutes, useNavigate } from "react-router-dom";
+import { List, Paper, ThemeProvider, SvgIcon } from "@mui/material";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { routers } from "./_routers";
 import { getAxios } from "@/services/api";
 import { useVerge } from "@/hooks/use-verge";
+import LogoSvg from "@/assets/image/logo.svg?react";
+import iconLight from "@/assets/image/icon_light.svg?react";
+import iconDark from "@/assets/image/icon_dark.svg?react";
 import { useThemeMode, useEnableLog } from "@/services/states";
+import { LayoutItem } from "@/components/layout/layout-item";
+import { LayoutTraffic } from "@/components/layout/layout-traffic";
+import { UpdateButton } from "@/components/layout/update-button";
 import { useCustomTheme } from "@/components/layout/use-custom-theme";
 import getSystem from "@/utils/get-system";
 import "dayjs/locale/ru";
 import "dayjs/locale/zh-cn";
+import { getPortableFlag } from "@/services/cmds";
 import React from "react";
 import { useListen } from "@/hooks/use-listen";
 import { listen } from "@tauri-apps/api/event";
@@ -21,11 +29,7 @@ import { useClashInfo } from "@/hooks/use-clash";
 import { initGlobalLogService } from "@/services/global-log-service";
 import { invoke } from "@tauri-apps/api/core";
 import { showNotice } from "@/services/noticeService";
-import { Toaster } from "@/components/ui/sonner";
-import { SidebarProvider, useSidebar } from "@/components/ui/sidebar";
-import { AppSidebar } from "@/components/layout/sidebar";
-import { useZoomControls } from "@/hooks/useZoomControls";
-import { HwidErrorDialog } from "@/components/profile/hwid-error-dialog";
+import { NoticeManager } from "@/components/base/NoticeManager";
 
 const appWindow = getCurrentWebviewWindow();
 export let portableFlag = false;
@@ -34,34 +38,24 @@ dayjs.extend(relativeTime);
 
 const OS = getSystem();
 
-// Notification Handler
+// 通知处理函数
 const handleNoticeMessage = (
   status: string,
   msg: string,
   t: (key: string) => string,
   navigate: (path: string, options?: any) => void,
 ) => {
-  console.log("[Notification Listener V2] Receiving a message:", status, msg);
+  console.log("[通知监听 V2] 收到消息:", status, msg);
 
   switch (status) {
     case "import_sub_url::ok":
       mutate("getProfiles");
-      navigate("/");
+      navigate("/profile", { state: { current: msg } });
       showNotice("success", t("Import Subscription Successful"));
-      sessionStorage.setItem("activateProfile", msg);
       break;
     case "import_sub_url::error":
-      console.log(msg);
-      if (
-        msg.toLowerCase().includes("device") ||
-        msg.toLowerCase().includes("устройств")
-      ) {
-        window.dispatchEvent(
-          new CustomEvent("show-hwid-error", { detail: msg }),
-        );
-      } else {
-        showNotice("error", msg);
-      }
+      navigate("/profile");
+      showNotice("error", msg);
       break;
     case "set_config::error":
       showNotice("error", msg);
@@ -148,14 +142,13 @@ const handleNoticeMessage = (
       showNotice("error", `${t("Failed to Change Core")}: ${msg}`);
       break;
     default: // Optional: Log unhandled statuses
-      console.warn(`[Notification Listener V2] Unprocessed state: ${status}`);
+      console.warn(`[通知监听 V2] 未处理的状态: ${status}`);
       break;
   }
 };
 
 const Layout = () => {
   const mode = useThemeMode();
-  useZoomControls();
   const isDark = mode === "light" ? false : true;
   const { t } = useTranslation();
   useCustomTheme();
@@ -176,17 +169,14 @@ const Layout = () => {
         try {
           handleNoticeMessage(status, msg, t, navigate);
         } catch (error) {
-          console.error(
-            "[Layout] Failure to process a notification message:",
-            error,
-          );
+          console.error("[Layout] 处理通知消息失败:", error);
         }
       }, 0);
     },
     [t, navigate],
   );
 
-  // Initialize the global logging service
+  // 初始化全局日志服务
   useEffect(() => {
     if (clashInfo) {
       const { server = "", secret = "" } = clashInfo;
@@ -194,7 +184,7 @@ const Layout = () => {
     }
   }, [clashInfo, enableLog]);
 
-  // Setting up a listener
+  // 设置监听器
   useEffect(() => {
     const listeners = [
       addListener("verge://refresh-clash-config", async () => {
@@ -240,17 +230,11 @@ const Layout = () => {
                 try {
                   unlisten();
                 } catch (error) {
-                  console.error(
-                    "[Layout] Failed to clear event listener:",
-                    error,
-                  );
+                  console.error("[Layout] 清理事件监听器失败:", error);
                 }
               })
               .catch((error) => {
-                console.error(
-                  "[Layout] Failed to get unlisten function:",
-                  error,
-                );
+                console.error("[Layout] 获取unlisten函数失败:", error);
               });
           }
         });
@@ -260,11 +244,11 @@ const Layout = () => {
             try {
               cleanup();
             } catch (error) {
-              console.error("[Layout] Failed to clear window listener:", error);
+              console.error("[Layout] 清理窗口监听器失败:", error);
             }
           })
           .catch((error) => {
-            console.error("[Layout] Failed to get cleanup function:", error);
+            console.error("[Layout] 获取cleanup函数失败:", error);
           });
       }, 0);
     };
@@ -272,12 +256,10 @@ const Layout = () => {
 
   useEffect(() => {
     if (initRef.current) {
-      console.log(
-        "[Layout] Initialization code has already been executed, skip",
-      );
+      console.log("[Layout] 初始化代码已执行过，跳过");
       return;
     }
-    console.log("[Layout] Begin executing initialization code");
+    console.log("[Layout] 开始执行初始化代码");
     initRef.current = true;
 
     let isInitialized = false;
@@ -287,27 +269,27 @@ const Layout = () => {
     const notifyBackend = async (action: string, stage?: string) => {
       try {
         if (stage) {
-          console.log(`[Layout] Notification Backend ${action}: ${stage}`);
+          console.log(`[Layout] 通知后端 ${action}: ${stage}`);
           await invoke("update_ui_stage", { stage });
         } else {
-          console.log(`[Layout] Notification Backend ${action}`);
+          console.log(`[Layout] 通知后端 ${action}`);
           await invoke("notify_ui_ready");
         }
       } catch (err) {
-        console.error(`[Layout] Notification failure ${action}:`, err);
+        console.error(`[Layout] 通知失败 ${action}:`, err);
       }
     };
 
     const removeLoadingOverlay = () => {
       const initialOverlay = document.getElementById("initial-loading-overlay");
       if (initialOverlay) {
-        console.log("[Layout] Remove loading indicator");
+        console.log("[Layout] 移除加载指示器");
         initialOverlay.style.opacity = "0";
         setTimeout(() => {
           try {
             initialOverlay.remove();
           } catch (e) {
-            console.log("[Layout] Load indicator has been removed");
+            console.log("[Layout] 加载指示器已被移除");
           }
         }, 300);
       }
@@ -315,25 +297,23 @@ const Layout = () => {
 
     const performInitialization = async () => {
       if (isInitialized) {
-        console.log("[Layout] Already initialized, skip");
+        console.log("[Layout] 已经初始化过，跳过");
         return;
       }
 
       initializationAttempts++;
-      console.log(
-        `[Layout] Start ${initializationAttempts} for the first time`,
-      );
+      console.log(`[Layout] 开始第 ${initializationAttempts} 次初始化尝试`);
 
       try {
         removeLoadingOverlay();
 
-        await notifyBackend("Loading phase", "Loading");
+        await notifyBackend("加载阶段", "Loading");
 
         await new Promise<void>((resolve) => {
           const checkReactMount = () => {
             const rootElement = document.getElementById("root");
             if (rootElement && rootElement.children.length > 0) {
-              console.log("[Layout] React components are mounted");
+              console.log("[Layout] React组件已挂载");
               resolve();
             } else {
               setTimeout(checkReactMount, 50);
@@ -343,49 +323,43 @@ const Layout = () => {
           checkReactMount();
 
           setTimeout(() => {
-            console.log(
-              "[Layout] React components mount check timeout, continue execution",
-            );
+            console.log("[Layout] React组件挂载检查超时，继续执行");
             resolve();
           }, 2000);
         });
 
-        await notifyBackend("DOM ready", "DomReady");
+        await notifyBackend("DOM就绪", "DomReady");
 
         await new Promise<void>((resolve) => {
           requestAnimationFrame(() => resolve());
         });
 
-        await notifyBackend("Resource loading completed", "ResourcesLoaded");
+        await notifyBackend("资源加载完成", "ResourcesLoaded");
 
-        await notifyBackend("UI ready");
+        await notifyBackend("UI就绪");
 
         isInitialized = true;
-        console.log(
-          `[Layout] The ${initializationAttempts} initialization is complete`,
-        );
+        console.log(`[Layout] 第 ${initializationAttempts} 次初始化完成`);
       } catch (error) {
         console.error(
-          `[Layout] Initialization failure at ${initializationAttempts}:`,
+          `[Layout] 第 ${initializationAttempts} 次初始化失败:`,
           error,
         );
 
         if (initializationAttempts < maxAttempts) {
           console.log(
-            `[Layout] The first ${initializationAttempts + 1} retry will be made after 500ms`,
+            `[Layout] 将在500ms后进行第 ${initializationAttempts + 1} 次重试`,
           );
           setTimeout(performInitialization, 500);
         } else {
-          console.error(
-            "[Layout] All initialization attempts fail, perform emergency initialization",
-          );
+          console.error("[Layout] 所有初始化尝试都失败，执行紧急初始化");
 
           removeLoadingOverlay();
           try {
-            await notifyBackend("UI ready");
+            await notifyBackend("UI就绪");
             isInitialized = true;
           } catch (e) {
-            console.error("[Layout] Emergency initialization also failed:", e);
+            console.error("[Layout] 紧急初始化也失败:", e);
           }
         }
       }
@@ -395,50 +369,39 @@ const Layout = () => {
 
     const setupEventListener = async () => {
       try {
-        console.log("[Layout] Start listening for startup completion events");
+        console.log("[Layout] 开始监听启动完成事件");
         const unlisten = await listen("verge://startup-completed", () => {
           if (!hasEventTriggered) {
-            console.log(
-              "[Layout] Receive startup completion event, start initialization",
-            );
+            console.log("[Layout] 收到启动完成事件，开始初始化");
             hasEventTriggered = true;
             performInitialization();
           }
         });
         return unlisten;
       } catch (err) {
-        console.error(
-          "[Layout] Failed to listen for startup completion event:",
-          err,
-        );
+        console.error("[Layout] 监听启动完成事件失败:", err);
         return () => {};
       }
     };
 
     const checkImmediateInitialization = async () => {
       try {
-        console.log("[Layout] Check if the backend is ready");
+        console.log("[Layout] 检查后端是否已就绪");
         await invoke("update_ui_stage", { stage: "Loading" });
 
         if (!hasEventTriggered && !isInitialized) {
-          console.log(
-            "[Layout] Backend is ready, start initialization immediately",
-          );
+          console.log("[Layout] 后端已就绪，立即开始初始化");
           hasEventTriggered = true;
           performInitialization();
         }
       } catch (err) {
-        console.log(
-          "[Layout] Backend not yet ready, waiting for startup completion event",
-        );
+        console.log("[Layout] 后端尚未就绪，等待启动完成事件");
       }
     };
 
     const backupInitialization = setTimeout(() => {
       if (!hasEventTriggered && !isInitialized) {
-        console.warn(
-          "[Layout] Standby initialization trigger: initialization not started within 1.5 seconds",
-        );
+        console.warn("[Layout] 备用初始化触发：1.5秒内未开始初始化");
         hasEventTriggered = true;
         performInitialization();
       }
@@ -446,11 +409,9 @@ const Layout = () => {
 
     const emergencyInitialization = setTimeout(() => {
       if (!isInitialized) {
-        console.error(
-          "[Layout] Emergency initialization trigger: initialization not completed within 5 seconds",
-        );
+        console.error("[Layout] 紧急初始化触发：5秒内未完成初始化");
         removeLoadingOverlay();
-        notifyBackend("UI ready").catch(() => {});
+        notifyBackend("UI就绪").catch(() => {});
         isInitialized = true;
       }
     }, 5000);
@@ -466,10 +427,10 @@ const Layout = () => {
     };
   }, []);
 
-  // Language and start page settings
+  // 语言和起始页设置
   useEffect(() => {
     if (language) {
-      dayjs.locale(language === "ru" ? "ru-ru" : language);
+      dayjs.locale(language === "zh" ? "zh-cn" : language);
       i18next.changeLanguage(language);
     }
   }, [language]);
@@ -484,31 +445,14 @@ const Layout = () => {
     return <div className="h-screen w-screen bg-background" />;
   }
 
-  const AppLayout = () => {
-    const { state, isMobile } = useSidebar();
-    const location = useLocation();
-    const routersEles = useRoutes(routers);
-
-    return (
-      <>
-        <AppSidebar />
-        <main className="h-screen w-full overflow-y-auto transition-[margin] duration-200 ease-linear">
-          <div className="h-full w-full relative">
-            {routersEles &&
-              React.cloneElement(routersEles, { key: location.pathname })}
-          </div>
-        </main>
-        <HwidErrorDialog />
-      </>
-    );
-  };
-
   return (
     <SWRConfig value={{ errorRetryCount: 3 }}>
-      <SidebarProvider defaultOpen={false}>
-        <AppLayout />
-        <Toaster />
-      </SidebarProvider>
+      <NoticeManager />
+      <div className="h-screen w-screen bg-background text-foreground overflow-hidden">
+        <div className="h-full w-full relative">
+          {React.cloneElement(routersEles, { key: location.pathname })}
+        </div>
+      </div>
     </SWRConfig>
   );
 };

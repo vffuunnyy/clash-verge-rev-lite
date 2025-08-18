@@ -39,11 +39,11 @@ pub fn get_exe_path() -> Result<PathBuf> {
 pub fn create_shortcut() -> Result<()> {
     let exe_path = get_exe_path()?;
     let startup_dir = get_startup_dir()?;
-    let shortcut_path = startup_dir.join("Koala-Clash.lnk");
+    let shortcut_path = startup_dir.join("Clash-Verge.lnk");
 
-    // If the shortcut already exists, return success directly
+    // 如果快捷方式已存在，直接返回成功
     if shortcut_path.exists() {
-        info!(target: "app", "Startup shortcut already exists");
+        info!(target: "app", "启动快捷方式已存在");
         return Ok(());
     }
 
@@ -59,36 +59,36 @@ pub fn create_shortcut() -> Result<()> {
 
     let output = std::process::Command::new("powershell")
         .args(["-Command", &powershell_command])
-        // Hide the PowerShell window
+        // 隐藏 PowerShell 窗口
         .creation_flags(0x08000000) // CREATE_NO_WINDOW
         .output()
-        .map_err(|e| anyhow!("Failed to execute PowerShell command: {}", e))?;
+        .map_err(|e| anyhow!("执行 PowerShell 命令失败: {}", e))?;
 
     if !output.status.success() {
         let error_msg = String::from_utf8_lossy(&output.stderr);
-        return Err(anyhow!("Failed to create shortcut: {}", error_msg));
+        return Err(anyhow!("创建快捷方式失败: {}", error_msg));
     }
 
-    info!(target: "app", "Successfully created startup shortcut");
+    info!(target: "app", "成功创建启动快捷方式");
     Ok(())
 }
 
-/// Remove the shortcut
+/// 删除快捷方式
 #[cfg(target_os = "windows")]
 pub fn remove_shortcut() -> Result<()> {
     let startup_dir = get_startup_dir()?;
-    let shortcut_path = startup_dir.join("Koala-Clash.lnk");
+    let shortcut_path = startup_dir.join("Clash-Verge.lnk");
 
-    // If the shortcut does not exist, return success directly
+    // 如果快捷方式不存在，直接返回成功
     if !shortcut_path.exists() {
-        info!(target: "app", "Startup shortcut does not exist, nothing to remove");
+        info!(target: "app", "启动快捷方式不存在，无需删除");
         return Ok(());
     }
 
-    // Delete the shortcut
-    fs::remove_file(&shortcut_path).map_err(|e| anyhow!("Failed to delete shortcut: {}", e))?;
+    // 删除快捷方式
+    fs::remove_file(&shortcut_path).map_err(|e| anyhow!("删除快捷方式失败: {}", e))?;
 
-    info!(target: "app", "Successfully removed startup shortcut");
+    info!(target: "app", "成功删除启动快捷方式");
     Ok(())
 }
 
@@ -96,7 +96,7 @@ pub fn remove_shortcut() -> Result<()> {
 #[cfg(target_os = "windows")]
 pub fn is_shortcut_enabled() -> Result<bool> {
     let startup_dir = get_startup_dir()?;
-    let shortcut_path = startup_dir.join("Koala-Clash.lnk");
+    let shortcut_path = startup_dir.join("Clash-Verge.lnk");
 
     Ok(shortcut_path.exists())
 }

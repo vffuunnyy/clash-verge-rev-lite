@@ -30,8 +30,8 @@ use tauri::Url;
 pub static VERSION: OnceCell<String> = OnceCell::new();
 
 // 定义默认窗口尺寸常量
-pub const DEFAULT_WIDTH: u32 = 940;
-pub const DEFAULT_HEIGHT: u32 = 700;
+const DEFAULT_WIDTH: u32 = 940;
+const DEFAULT_HEIGHT: u32 = 700;
 
 // 添加全局UI准备就绪标志
 static UI_READY: OnceCell<Arc<RwLock<bool>>> = OnceCell::new();
@@ -549,7 +549,7 @@ pub async fn resolve_scheme(param: String) -> Result<()> {
         }
     };
 
-    if link_parsed.scheme() == "clash" || link_parsed.scheme() == "koala_clash" {
+    if link_parsed.scheme() == "clash" || link_parsed.scheme() == "koala-clash" {
         let mut name: Option<String> = None;
         let mut url_param: Option<String> = None;
 
@@ -559,7 +559,6 @@ pub async fn resolve_scheme(param: String) -> Result<()> {
                 "url" => {
                     url_param = Some(percent_decode_str(&value).decode_utf8_lossy().to_string())
                 }
-                "hwid" => use_hwid = value == "1" || value == "true",
                 _ => {}
             }
         }

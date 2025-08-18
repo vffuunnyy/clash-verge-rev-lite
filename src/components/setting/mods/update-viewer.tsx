@@ -118,7 +118,7 @@ export const UpdateViewer = forwardRef<DialogRef>((props, ref) => {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
-          <div className="flex justify-between items-center pr-5">
+          <div className="flex justify-between items-center">
             <DialogTitle>
               {t("New Version")} v{updateInfo?.version}
             </DialogTitle>
@@ -127,7 +127,7 @@ export const UpdateViewer = forwardRef<DialogRef>((props, ref) => {
               size="sm"
               onClick={() =>
                 openUrl(
-                  `https://github.com/coolcoala/clash-verge-rev-lite/releases/tag/v${updateInfo?.version}`,
+                  `https://github.com/clash-verge-rev/clash-verge-rev/releases/tag/v${updateInfo?.version}`,
                 )
               }
             >
