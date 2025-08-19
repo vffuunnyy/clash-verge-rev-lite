@@ -29,7 +29,12 @@ import { useClashInfo } from "@/hooks/use-clash";
 import { initGlobalLogService } from "@/services/global-log-service";
 import { invoke } from "@tauri-apps/api/core";
 import { showNotice } from "@/services/noticeService";
-import { NoticeManager } from "@/components/base/NoticeManager";
+import { Toaster } from "@/components/ui/sonner";
+import { SidebarProvider, useSidebar } from "@/components/ui/sidebar";
+import { AppSidebar } from "@/components/layout/sidebar";
+import { useZoomControls } from "@/hooks/useZoomControls";
+import { HwidErrorDialog } from "@/components/profile/hwid-error-dialog";
+import { BaseLoadingOverlay } from "@/components/base";
 
 const appWindow = getCurrentWebviewWindow();
 export let portableFlag = false;
@@ -49,13 +54,23 @@ const handleNoticeMessage = (
 
   switch (status) {
     case "import_sub_url::ok":
-      mutate("getProfiles");
-      navigate("/profile", { state: { current: msg } });
+      mutate("getProfiles").then((_) => {});
+      navigate("/");
       showNotice("success", t("Import Subscription Successful"));
       break;
     case "import_sub_url::error":
-      navigate("/profile");
-      showNotice("error", msg);
+      console.log(msg);
+      // TODO: refactor please
+      if (
+        msg.toLowerCase().includes("device") ||
+        msg.toLowerCase().includes("устройств")
+      ) {
+        window.dispatchEvent(
+          new CustomEvent("show-hwid-error", { detail: msg }),
+        );
+      } else {
+        showNotice("error", msg);
+      }
       break;
     case "set_config::error":
       showNotice("error", msg);
@@ -149,7 +164,8 @@ const handleNoticeMessage = (
 
 const Layout = () => {
   const mode = useThemeMode();
-  const isDark = mode === "light" ? false : true;
+  useZoomControls();
+  const isDark = mode !== "light";
   const { t } = useTranslation();
   useCustomTheme();
   const { verge } = useVerge();
@@ -161,6 +177,9 @@ const Layout = () => {
   const routersEles = useRoutes(routers);
   const { addListener, setupCloseListener } = useListen();
   const initRef = useRef(false);
+
+  // TODO: вот тут если что реализация спина на реакте, можно её использовать в другом туду..
+  const [updatingCount, setUpdatingCount] = useState(0);
 
   const handleNotice = useCallback(
     (payload: [string, string]) => {
@@ -187,29 +206,36 @@ const Layout = () => {
   // 设置监听器
   useEffect(() => {
     const listeners = [
-      addListener("verge://refresh-clash-config", async () => {
+      addListener("koala://refresh-clash-config", async () => {
         await getAxios(true);
-        mutate("getProxies");
-        mutate("getVersion");
-        mutate("getClashConfig");
-        mutate("getProxyProviders");
+        await mutate("getProxies");
+        await mutate("getVersion");
+        await mutate("getClashConfig");
+        await mutate("getProxyProviders");
       }),
 
-      addListener("verge://refresh-verge-config", () => {
-        mutate("getVergeConfig");
-        mutate("getSystemProxy");
-        mutate("getAutotemProxy");
+      addListener("koala://refresh-verge-config", () => {
+        mutate("getVergeConfig").then((_) => {});
+        mutate("getSystemProxy").then((_) => {});
+        mutate("getAutotemProxy").then((_) => {});
       }),
 
-      addListener("verge://notice-message", ({ payload }) =>
+      addListener("koala://notice-message", ({ payload }) =>
         handleNotice(payload as [string, string]),
       ),
+      // Loader: profile update start/end
+      addListener("profile-update-started", () => {
+        setUpdatingCount((n) => n + 1);
+      }),
+      addListener("profile-update-completed", () => {
+        setUpdatingCount((n) => Math.max(0, n - 1));
+      }),
     ];
 
     const setupWindowListeners = async () => {
       const [hideUnlisten, showUnlisten] = await Promise.all([
-        listen("verge://hide-window", () => appWindow.hide()),
-        listen("verge://show-window", () => appWindow.show()),
+        listen("koala://hide-window", () => appWindow.hide()),
+        listen("koala://show-window", () => appWindow.show()),
       ]);
 
       return () => {
@@ -218,7 +244,7 @@ const Layout = () => {
       };
     };
 
-    setupCloseListener();
+    setupCloseListener().then((_) => {});
     const cleanupWindow = setupWindowListeners();
 
     return () => {
@@ -369,15 +395,14 @@ const Layout = () => {
 
     const setupEventListener = async () => {
       try {
-        console.log("[Layout] 开始监听启动完成事件");
-        const unlisten = await listen("verge://startup-completed", () => {
+        console.log("[Layout] Start listening for startup completion events");
+        return await listen("koala://startup-completed", () => {
           if (!hasEventTriggered) {
             console.log("[Layout] 收到启动完成事件，开始初始化");
             hasEventTriggered = true;
             performInitialization();
           }
         });
-        return unlisten;
       } catch (err) {
         console.error("[Layout] 监听启动完成事件失败:", err);
         return () => {};
@@ -392,7 +417,7 @@ const Layout = () => {
         if (!hasEventTriggered && !isInitialized) {
           console.log("[Layout] 后端已就绪，立即开始初始化");
           hasEventTriggered = true;
-          performInitialization();
+          await performInitialization();
         }
       } catch (err) {
         console.log("[Layout] 后端尚未就绪，等待启动完成事件");
@@ -403,7 +428,7 @@ const Layout = () => {
       if (!hasEventTriggered && !isInitialized) {
         console.warn("[Layout] 备用初始化触发：1.5秒内未开始初始化");
         hasEventTriggered = true;
-        performInitialization();
+        performInitialization().then((_) => {});
       }
     }, 1500);
 
@@ -430,8 +455,8 @@ const Layout = () => {
   // 语言和起始页设置
   useEffect(() => {
     if (language) {
-      dayjs.locale(language === "zh" ? "zh-cn" : language);
-      i18next.changeLanguage(language);
+      dayjs.locale(language === "ru" ? "ru-ru" : language);
+      i18next.changeLanguage(language).then((_) => {});
     }
   }, [language]);
 
@@ -444,6 +469,26 @@ const Layout = () => {
   if (!routersEles) {
     return <div className="h-screen w-screen bg-background" />;
   }
+
+  const AppLayout = () => {
+    const { state, isMobile } = useSidebar();
+    const location = useLocation();
+    const routersEles = useRoutes(routers);
+
+    return (
+      <>
+        <AppSidebar />
+        <main className="h-screen w-full overflow-y-auto transition-[margin] duration-200 ease-linear">
+          <div className="h-full w-full relative">
+            {routersEles &&
+              React.cloneElement(routersEles, { key: location.pathname })}
+          </div>
+          <BaseLoadingOverlay isLoading={updatingCount > 0} className="fixed" />
+        </main>
+        <HwidErrorDialog />
+      </>
+    );
+  };
 
   return (
     <SWRConfig value={{ errorRetryCount: 3 }}>

@@ -1,7 +1,7 @@
 #[cfg(target_os = "macos")]
 use crate::AppHandleManager;
 use crate::{
-    config::{Config, IVerge, PrfItem},
+    config::{Config, IVerge, PrfItem, PrfOption},
     core::*,
     logging, logging_error,
     module::lightweight::{self, auto_lightweight_mode_init},
@@ -341,7 +341,7 @@ pub fn create_window(is_show: bool) -> bool {
     .fullscreen(false)
     .inner_size(DEFAULT_WIDTH as f64, DEFAULT_HEIGHT as f64)
     .min_inner_size(1000.0, 800.0)
-    .visible(true) // 立即显示窗口，避免用户等待
+    .visible(false) // 避免 GTK 提示重复显示导致的 thaw 错误，创建后再显式 show
     .initialization_script(
         r#"
         console.log('[Tauri] 窗口初始化脚本开始执行');
@@ -431,7 +431,7 @@ pub fn create_window(is_show: bool) -> bool {
                     debug,
                     Type::Window,
                     true,
-                    "发送 verge://startup-completed 事件"
+                    "发送 koala://startup-completed 事件"
                 );
                 handle::Handle::notify_startup_completed();
 
@@ -567,17 +567,103 @@ pub async fn resolve_scheme(param: String) -> Result<()> {
             Some(url) => {
                 log::info!(target:"app", "decoded subscription url: {url}");
 
+                // Ensure the window is visible, but do not block the subsequent import logic
                 create_window(true);
-                match PrfItem::from_url(url.as_ref(), name, None, None).await {
-                    Ok(item) => {
-                        let uid = item.uid.clone().unwrap();
-                        let _ = wrap_err!(Config::profiles().data().append_item(item));
-                        handle::Handle::notice_message("import_sub_url::ok", uid);
+
+                // Dispatch the import task to a dedicated network runtime to avoid being
+                // affected by the UI event loop when minimized or in tray state
+                let name_cloned = name.clone();
+                crate::utils::network::NetworkManager::global().spawn(async move {
+                    logging!(info, Type::Setup, true, "Start deep-link import task");
+
+                    // Show a native overlay immediately in case the React UI hasn't mounted yet
+                    // TODO: make it НОРМАЛЬНО
+                    if let Some(window) = handle::Handle::global().get_window() {
+                        let _ = window.eval(r#"
+                          (function(){
+                            try {
+                              if (!document.getElementById('profile-update-overlay')) {
+                                var overlay = document.createElement('div');
+                                overlay.id = 'profile-update-overlay';
+                                overlay.style.position = 'fixed';
+                                overlay.style.inset = '0';
+                                overlay.style.zIndex = '9999';
+                                overlay.style.background = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'rgba(26,26,26,0.6)' : 'rgba(245,245,245,0.6)';
+                                overlay.style.display = 'flex';
+                                overlay.style.alignItems = 'center';
+                                overlay.style.justifyContent = 'center';
+                                overlay.style.backdropFilter = 'blur(2px)';
+                                overlay.innerHTML = '\n                                  <div style="display:flex;flex-direction:column;align-items:center;gap:12px">\n                                    <div style="width:44px;height:44px;border:3px solid #888;border-top:3px solid #3498db;border-radius:50%;animation:spin 1s linear infinite"></div>\n                                    <div style="font-size:14px;opacity:0.85">Updating subscription...</div>\n                                  </div>\n                                  <style>\n                                    @keyframes spin { 0% { transform: rotate(0deg);} 100% { transform: rotate(360deg);} }\n                                  </style>\n                                ';
+                                document.body ? document.body.appendChild(overlay) : document.addEventListener('DOMContentLoaded', function(){ if (!document.getElementById('profile-update-overlay')) document.body.appendChild(overlay); });
+                              }
+                            } catch(e) { console.error('[DeepLink] Failed to show native overlay', e); }
+                          })();
+                        "#);
                     }
-                    Err(e) => {
-                        handle::Handle::notice_message("import_sub_url::error", e.to_string());
+
+                    handle::Handle::notify_profile_update_started(url.clone());
+                    let imported = match PrfItem::from_url(url.as_ref(), name_cloned.clone(), None, None).await {
+                        Ok(item) => Ok(item),
+                        Err(e1) => {
+                            logging!(warn, Type::Network, true, "Direct import failed, retry via local proxy: {}", e1);
+
+                            let opt = PrfOption {
+                                with_proxy: Some(false),
+                                self_proxy: Some(true),
+                                timeout_seconds: Some(15),
+                                ..Default::default()
+                            };
+                            PrfItem::from_url(url.as_ref(), name_cloned, None, Some(opt)).await
+                        }
+                    };
+                    match imported {
+                        Ok(item) => {
+                            if let Some(uid) = item.uid.clone() {
+                                let _ = wrap_err!(Config::profiles().data().append_item(item.clone()));
+                                handle::Handle::notice_message("import_sub_url::ok", uid.clone());
+
+                                if let Some(app_handle) = handle::Handle::global().app_handle() {
+                                    logging!(info, Type::Config, true, "Switch to newly imported profile: {}", uid);
+                                    let _ = crate::cmd::patch_profiles_config_by_profile_index(app_handle, uid.clone()).await;
+                                }
+
+                                logging!(info, Type::Config, true, "Trigger subscription update: {}", uid);
+
+                                handle::Handle::notify_profile_update_started(uid.clone());
+                                if let Err(e) = crate::feat::update_profile(uid.clone(), None, Some(true), Some(true)).await {
+                                    logging!(error, Type::Config, true, "Update after deep-link import failed: {}", e);
+                                }
+
+                                handle::Handle::notify_profile_update_completed(uid.clone());
+                            } else {
+                                handle::Handle::notice_message(
+                                    "import_sub_url::error",
+                                    "missing uid".to_string(),
+                                );
+                            }
+                        }
+                        Err(e) => {
+                            handle::Handle::notice_message("import_sub_url::error", e.to_string());
+                        }
                     }
-                }
+                    handle::Handle::notify_profile_update_completed(url.clone());
+
+                    // Ensure the native overlay is removed
+                    // TODO: same
+                    if let Some(window) = handle::Handle::global().get_window() {
+                        let _ = window.eval(r#"
+                          (function(){
+                            try {
+                              var el = document.getElementById('profile-update-overlay');
+                              if (el) {
+                                el.style.opacity = '0';
+                                setTimeout(function(){ try { el.remove(); } catch(_){} }, 200);
+                              }
+                            } catch(e) { console.error('[DeepLink] Failed to remove native overlay', e); }
+                          })();
+                        "#);
+                    }
+                });
             }
             None => bail!("failed to get profile url"),
         }
