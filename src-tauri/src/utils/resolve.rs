@@ -345,7 +345,7 @@ pub async fn resolve_setup_async(app_handle: &AppHandle) {
         info,
         Type::Setup,
         true,
-        "异步设置任务完成，耗时: {:?}",
+        "Asynchronous task completed, time taken: {:?}",
         elapsed
     );
 
@@ -355,7 +355,7 @@ pub async fn resolve_setup_async(app_handle: &AppHandle) {
             warn,
             Type::Setup,
             true,
-            "异步设置任务耗时较长({:?})",
+            "Asynchronous task setup takes a long time ({:?})",
             elapsed
         );
     }

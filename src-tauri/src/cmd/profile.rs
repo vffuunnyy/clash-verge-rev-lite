@@ -30,7 +30,7 @@ async fn cleanup_processing_state(sequence: u64, reason: &str) {
         info,
         Type::Cmd,
         true,
-        "{}，清理状态，序列号: {}",
+        "{}，Cleanup status, serial number: {}",
         reason,
         sequence
     );
@@ -90,7 +90,7 @@ pub async fn get_profiles() -> CmdResult<IProfiles> {
                 error,
                 Type::Cmd,
                 true,
-                "获取draft配置任务失败: {}",
+                "Failed to obtain draft configuration task: {}",
                 join_err
             );
         }
@@ -104,7 +104,7 @@ pub async fn get_profiles() -> CmdResult<IProfiles> {
         warn,
         Type::Cmd,
         true,
-        "所有获取配置策略都失败，尝试fallback"
+        "All attempts to obtain configuration policies failed. Trying fallback"
     );
 
     match tokio::task::spawn_blocking(IProfiles::new).await {
@@ -351,7 +351,7 @@ pub async fn patch_profiles_config(profiles: IProfiles) -> CmdResult<bool> {
                         error,
                         Type::Cmd,
                         true,
-                        "目标配置文件不存在: {}",
+                        "Target profile does not exist: {}",
                         file_path.display()
                     );
                     handle::Handle::notice_message(
@@ -448,7 +448,7 @@ pub async fn patch_profiles_config(profiles: IProfiles) -> CmdResult<bool> {
             info,
             Type::Cmd,
             true,
-            "设置当前处理profile: {}, 序列号: {}",
+            "Set current processing profile: {}, serial number: {}",
             profile,
             current_sequence
         );
@@ -474,7 +474,7 @@ pub async fn patch_profiles_config(profiles: IProfiles) -> CmdResult<bool> {
             info,
             Type::Cmd,
             true,
-            "在内核交互前发现更新的请求 (序列号: {} < {})，放弃当前请求",
+            "Detect updated requests before kernel interaction (sequence number: {} < {}) and abandon the current request.",
             current_sequence,
             latest_sequence
         );
@@ -506,7 +506,7 @@ pub async fn patch_profiles_config(profiles: IProfiles) -> CmdResult<bool> {
                     info,
                     Type::Cmd,
                     true,
-                    "内核操作后发现更新的请求 (序列号: {} < {})，忽略当前结果",
+                    "After kernel operation, an updated request was found (sequence number: {} < {}), ignore the current result.",
                     current_sequence,
                     latest_sequence
                 );
@@ -518,7 +518,7 @@ pub async fn patch_profiles_config(profiles: IProfiles) -> CmdResult<bool> {
                 info,
                 Type::Cmd,
                 true,
-                "配置更新成功，序列号: {}",
+                "Configuration update successful, serial number: {}",
                 current_sequence
             );
             Config::profiles().apply();
@@ -585,7 +585,7 @@ pub async fn patch_profiles_config(profiles: IProfiles) -> CmdResult<bool> {
 
                 crate::process::AsyncHandler::spawn(|| async move {
                     if let Err(e) = Config::profiles().data().save_file() {
-                        log::warn!(target: "app", "异步保存恢复配置文件失败: {e}");
+                        log::warn!(target: "app", "Failed to save and restore configuration file asynchronously: {e}");
                     }
                 });
 
